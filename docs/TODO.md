@@ -48,7 +48,7 @@ refer to them in commits and the brief.
 - [x] **A3 Reference compare.** `aclivery compare`: each reference photo next to a render from the matching view; references
   and their views recorded in the brief.
 - [~] **A4 Redo the Thiele pass** on doors, hood and plates using A1-A3, and compare against the references.
-- [x] **A5 Tests and docs for A1-A4** (16 tests). Committed: `b25d634` (baseline), `3ec731d` (this iteration) on branch `feat/baseline-scaffold` (not merged to `main`; merging is the user's call).
+- [x] **A5 Tests and docs for A1-A4** (16 tests). Committed as one squashed commit `45fffd1` on `main` and pushed (2026-10-21, owner-approved, marked work in progress). The detailed local history stays on the local-only branch `feat/baseline-scaffold` (never push it: its commits still carry the old MIT stub licence).
 
 ## 3. Optimise the Thiele use case (after section 2)
 
