@@ -1,0 +1,778 @@
+{
+ "car": "rss_gtm_protech_p92_f6",
+ "texture": "EXT_Main",
+ "atlas": {
+  "width": 8192,
+  "height": 2956
+ },
+ "provenance": "Region boxes hand-drawn by the user on the cutouts image; panel names, rotations, visibility from liverykit profile (kn5 geometry) @ f5c56b8. The cutouts image is the atlas at 541px height with ~92px cropped off the left (estimated +-3px), so uvBox = (x+92)/1499.",
+ "conventions": "rect = [u, v, w, h] normalised, v from top. rotation = liverykit textRotation (deg) for upright text on that panel. side from the panel name (right = car x<0 = TOP strip of the atlas, left = BOTTOM strip). visible = ray-cast fraction seen from outside.",
+ "verified": [
+  "right_* panels sit in the top strip with rotation 180, left_* in the bottom strip with rotation 0 (profile data)",
+  "left_mid_lower_2 / right_mid_lower_2 are the mirrors (magenta probe render)"
+ ],
+ "regions": [
+  {
+   "id": 1,
+   "name": "front_bumper",
+   "uvBox": [
+    0.0627,
+    0.0961,
+    0.1201,
+    0.939
+   ],
+   "panels": [
+    {
+     "name": "centre_nose",
+     "side": "centre",
+     "rect": [
+      0.0651,
+      0.1297,
+      0.0493,
+      0.74
+     ],
+     "rotation": 90,
+     "visible": 0.94
+    },
+    {
+     "name": "centre_nose_upper_2",
+     "side": "centre",
+     "rect": [
+      0.0695,
+      0.2761,
+      0.0203,
+      0.4472
+     ],
+     "rotation": 90,
+     "visible": 0.93
+    },
+    {
+     "name": "right_nose_upper",
+     "side": "right",
+     "rect": [
+      0.0869,
+      0.2746,
+      0.0189,
+      0.1089
+     ],
+     "rotation": 90,
+     "visible": 0.98
+    },
+    {
+     "name": "left_nose",
+     "side": "left",
+     "rect": [
+      0.0869,
+      0.6159,
+      0.0189,
+      0.1089
+     ],
+     "rotation": 90,
+     "visible": 0.99
+    },
+    {
+     "name": "right_nose_lower",
+     "side": "right",
+     "rect": [
+      0.0657,
+      0.0938,
+      0.0383,
+      0.0442
+     ],
+     "rotation": 180,
+     "visible": 0.77
+    },
+    {
+     "name": "left_nose_lower",
+     "side": "left",
+     "rect": [
+      0.0657,
+      0.8615,
+      0.0383,
+      0.0442
+     ],
+     "rotation": 0,
+     "visible": 0.76
+    }
+   ]
+  },
+  {
+   "id": 2,
+   "name": "hood_and_front_fenders",
+   "uvBox": [
+    0.1201,
+    0.0222,
+    0.2895,
+    0.9667
+   ],
+   "panels": [
+    {
+     "name": "centre_front",
+     "side": "centre",
+     "rect": [
+      0.1128,
+      0.2769,
+      0.1634,
+      0.4457
+     ],
+     "rotation": 90,
+     "visible": 0.99
+    },
+    {
+     "name": "left_front",
+     "side": "left",
+     "rect": [
+      0.1144,
+      0.5883,
+      0.1817,
+      0.372
+     ],
+     "rotation": 0,
+     "visible": 0.84
+    },
+    {
+     "name": "right_front",
+     "side": "right",
+     "rect": [
+      0.1144,
+      0.039,
+      0.1817,
+      0.372
+     ],
+     "rotation": 180,
+     "visible": 0.84
+    },
+    {
+     "name": "centre_nose_upper",
+     "side": "centre",
+     "rect": [
+      0.2384,
+      0.2735,
+      0.0583,
+      0.4524
+     ],
+     "rotation": 90,
+     "visible": 0.33
+    },
+    {
+     "name": "right_rear_upper",
+     "side": "right",
+     "rect": [
+      0.1254,
+      0.0319,
+      0.1053,
+      0.1288
+     ],
+     "rotation": 270,
+     "visible": 0.13
+    },
+    {
+     "name": "left_rear_upper",
+     "side": "left",
+     "rect": [
+      0.1254,
+      0.8386,
+      0.1053,
+      0.1288
+     ],
+     "rotation": 270,
+     "visible": 0.12
+    },
+    {
+     "name": "left_front_upper",
+     "side": "left",
+     "rect": [
+      0.1834,
+      0.6674,
+      0.055,
+      0.1289
+     ],
+     "rotation": null,
+     "visible": 1
+    },
+    {
+     "name": "right_front_upper",
+     "side": "right",
+     "rect": [
+      0.1834,
+      0.2031,
+      0.055,
+      0.1289
+     ],
+     "rotation": null,
+     "visible": 1
+    },
+    {
+     "name": "left_mid_upper_4",
+     "side": "left",
+     "rect": [
+      0.2508,
+      0.8749,
+      0.056,
+      0.1016
+     ],
+     "rotation": 0,
+     "visible": 0.78
+    },
+    {
+     "name": "right_mid_upper_3",
+     "side": "right",
+     "rect": [
+      0.2508,
+      0.0228,
+      0.056,
+      0.1016
+     ],
+     "rotation": 180,
+     "visible": 0.78
+    },
+    {
+     "name": "right_nose",
+     "side": "right",
+     "rect": [
+      0.111,
+      0.1658,
+      0.0414,
+      0.0641
+     ],
+     "rotation": 90,
+     "visible": 0.64
+    },
+    {
+     "name": "centre_nose_lower_2",
+     "side": "centre",
+     "rect": [
+      0.1547,
+      0.4599,
+      0.0239,
+      0.0795
+     ],
+     "rotation": 270,
+     "visible": 0.33
+    },
+    {
+     "name": "right_mid_upper_4",
+     "side": "right",
+     "rect": [
+      0.0426,
+      0.0201,
+      0.1874,
+      0.01
+     ],
+     "rotation": 180,
+     "visible": 0.97
+    },
+    {
+     "name": "centre_nose_lower_3",
+     "side": "centre",
+     "rect": [
+      0.1547,
+      0.4997,
+      0.0239,
+      0.0398
+     ],
+     "rotation": 0,
+     "visible": 0
+    }
+   ]
+  },
+  {
+   "id": 3,
+   "name": "right_side",
+   "uvBox": [
+    0.2895,
+    0.0037,
+    0.5991,
+    0.329
+   ],
+   "panels": [
+    {
+     "name": "right_rear",
+     "side": "right",
+     "rect": [
+      0.3039,
+      0.0016,
+      0.308,
+      0.3595
+     ],
+     "rotation": 180,
+     "visible": 0.97
+    },
+    {
+     "name": "right_mid",
+     "side": "right",
+     "rect": [
+      0.3165,
+      0.0661,
+      0.1342,
+      0.2056
+     ],
+     "rotation": 180,
+     "visible": 0.43
+    },
+    {
+     "name": "right_mid_upper",
+     "side": "right",
+     "rect": [
+      0.322,
+      0.2698,
+      0.2443,
+      0.0941
+     ],
+     "rotation": 180,
+     "visible": 0.84
+    }
+   ]
+  },
+  {
+   "id": 4,
+   "name": "left_side",
+   "uvBox": [
+    0.2895,
+    0.6433,
+    0.5991,
+    0.9982
+   ],
+   "panels": [
+    {
+     "name": "left_rear",
+     "side": "left",
+     "rect": [
+      0.3039,
+      0.6383,
+      0.308,
+      0.3595
+     ],
+     "rotation": 0,
+     "visible": 0.98
+    },
+    {
+     "name": "left_mid",
+     "side": "left",
+     "rect": [
+      0.3165,
+      0.7278,
+      0.1342,
+      0.2056
+     ],
+     "rotation": 0,
+     "visible": 0.43
+    },
+    {
+     "name": "left_mid_upper_2",
+     "side": "left",
+     "rect": [
+      0.322,
+      0.6356,
+      0.2443,
+      0.0941
+     ],
+     "rotation": 0,
+     "visible": 0.83
+    },
+    {
+     "name": "left_tail_upper_3",
+     "side": "left",
+     "rect": [
+      0.5767,
+      0.8174,
+      0.042,
+      0.1145
+     ],
+     "rotation": 0,
+     "visible": 0.65
+    }
+   ]
+  },
+  {
+   "id": 5,
+   "name": "roof",
+   "uvBox": [
+    0.3249,
+    0.329,
+    0.5404,
+    0.6433
+   ],
+   "panels": [
+    {
+     "name": "centre_mid",
+     "side": "centre",
+     "rect": [
+      0.3688,
+      0.3442,
+      0.1155,
+      0.3109
+     ],
+     "rotation": null,
+     "visible": 0.99
+    },
+    {
+     "name": "centre_front_upper",
+     "side": "centre",
+     "rect": [
+      0.3365,
+      0.3513,
+      0.0366,
+      0.2968
+     ],
+     "rotation": 90,
+     "visible": 0.45
+    },
+    {
+     "name": "left_mid_upper",
+     "side": "left",
+     "rect": [
+      0.3961,
+      0.4945,
+      0.0653,
+      0.1431
+     ],
+     "rotation": null,
+     "visible": 0.99
+    },
+    {
+     "name": "left_mid_lower_3",
+     "side": "left",
+     "rect": [
+      0.3196,
+      0.5797,
+      0.0245,
+      0.1164
+     ],
+     "rotation": 270,
+     "visible": 0.76
+    },
+    {
+     "name": "right_mid_lower_3",
+     "side": "right",
+     "rect": [
+      0.3196,
+      0.3033,
+      0.0245,
+      0.1164
+     ],
+     "rotation": 270,
+     "visible": 0.77
+    }
+   ]
+  },
+  {
+   "id": 6,
+   "name": "rear_glass_deck",
+   "uvBox": [
+    0.5404,
+    0.329,
+    0.6511,
+    0.6433
+   ],
+   "panels": [
+    {
+     "name": "centre_tail_upper_3",
+     "side": "centre",
+     "rect": [
+      0.5942,
+      0.2291,
+      0.0619,
+      0.5411
+     ],
+     "rotation": 270,
+     "visible": 0.92
+    },
+    {
+     "name": "centre_tail_upper_5",
+     "side": "centre",
+     "rect": [
+      0.5673,
+      0.365,
+      0.0426,
+      0.2694
+     ],
+     "rotation": 270,
+     "visible": 1
+    },
+    {
+     "name": "left_tail_upper",
+     "side": "left",
+     "rect": [
+      0.5799,
+      0.5564,
+      0.0291,
+      0.0775
+     ],
+     "rotation": 270,
+     "visible": 0.97
+    },
+    {
+     "name": "right_tail_upper",
+     "side": "right",
+     "rect": [
+      0.5799,
+      0.3655,
+      0.0291,
+      0.0775
+     ],
+     "rotation": 270,
+     "visible": 0.98
+    }
+   ]
+  },
+  {
+   "id": 7,
+   "name": "rear_bumper",
+   "uvBox": [
+    0.6511,
+    0.0407,
+    0.7338,
+    0.9464
+   ],
+   "panels": [
+    {
+     "name": "centre_tail_upper",
+     "side": "centre",
+     "rect": [
+      0.6548,
+      0.0468,
+      0.0649,
+      0.9058
+     ],
+     "rotation": 270,
+     "visible": 0.95
+    },
+    {
+     "name": "centre_tail_upper_4",
+     "side": "centre",
+     "rect": [
+      0.704,
+      0.1826,
+      0.0317,
+      0.6342
+     ],
+     "rotation": 270,
+     "visible": 0.96
+    },
+    {
+     "name": "centre_tail_lower_2",
+     "side": "centre",
+     "rect": [
+      0.6905,
+      0.3394,
+      0.0132,
+      0.3205
+     ],
+     "rotation": 270,
+     "visible": 0.59
+    },
+    {
+     "name": "centre_tail_upper_7",
+     "side": "centre",
+     "rect": [
+      0.6655,
+      0.413,
+      0.0208,
+      0.1734
+     ],
+     "rotation": 270,
+     "visible": 1
+    },
+    {
+     "name": "centre_rear",
+     "side": "centre",
+     "rect": [
+      0.6984,
+      0.031,
+      0.0378,
+      0.0693
+     ],
+     "rotation": 0,
+     "visible": 0.02
+    }
+   ]
+  },
+  {
+   "id": 8,
+   "name": "wing",
+   "uvBox": [
+    0.7385,
+    0.0037,
+    0.9987,
+    0.9926
+   ],
+   "panels": [
+    {
+     "name": "centre_tail",
+     "side": "centre",
+     "rect": [
+      0.7359,
+      0.0024,
+      0.1607,
+      0.9946
+     ],
+     "rotation": null,
+     "visible": 0.92
+    },
+    {
+     "name": "right_tail",
+     "side": "right",
+     "rect": [
+      0.897,
+      0.0025,
+      0.1026,
+      0.325
+     ],
+     "rotation": 180,
+     "visible": 0.99
+    },
+    {
+     "name": "left_tail",
+     "side": "left",
+     "rect": [
+      0.897,
+      0.6719,
+      0.1026,
+      0.325
+     ],
+     "rotation": 0,
+     "visible": 0.99
+    },
+    {
+     "name": "centre_tail_lower",
+     "side": "centre",
+     "rect": [
+      0.9142,
+      0.3828,
+      0.073,
+      0.1497
+     ],
+     "rotation": null,
+     "visible": 0.47
+    },
+    {
+     "name": "centre_tail_upper_2",
+     "side": "centre",
+     "rect": [
+      0.9148,
+      0.5343,
+      0.0715,
+      0.148
+     ],
+     "rotation": null,
+     "visible": 0.22
+    },
+    {
+     "name": "centre_tail_upper_6",
+     "side": "centre",
+     "rect": [
+      0.8971,
+      0.3382,
+      0.0163,
+      0.3286
+     ],
+     "rotation": 180,
+     "visible": 0.58
+    },
+    {
+     "name": "left_tail_lower",
+     "side": "left",
+     "rect": [
+      0.908,
+      0.3547,
+      0.07,
+      0.0742
+     ],
+     "rotation": null,
+     "visible": 0.08
+    },
+    {
+     "name": "right_tail_lower",
+     "side": "right",
+     "rect": [
+      0.908,
+      0.3547,
+      0.07,
+      0.0742
+     ],
+     "rotation": null,
+     "visible": 0.08
+    },
+    {
+     "name": "left_tail_lower_2",
+     "side": "left",
+     "rect": [
+      0.9113,
+      0.3036,
+      0.0707,
+      0.0677
+     ],
+     "rotation": null,
+     "visible": 0.98
+    },
+    {
+     "name": "right_tail_lower_2",
+     "side": "right",
+     "rect": [
+      0.9113,
+      0.3036,
+      0.0707,
+      0.0677
+     ],
+     "rotation": null,
+     "visible": 0.96
+    }
+   ]
+  },
+  {
+   "id": 9,
+   "name": "mirrors",
+   "uvBox": [
+    0.2895,
+    0.329,
+    0.3249,
+    0.6433
+   ],
+   "panels": [
+    {
+     "name": "left_mid_lower_2",
+     "side": "left",
+     "rect": [
+      0.2861,
+      0.5289,
+      0.0329,
+      0.2492
+     ],
+     "rotation": 90,
+     "visible": 0.92
+    },
+    {
+     "name": "right_mid_lower_2",
+     "side": "right",
+     "rect": [
+      0.2861,
+      0.2213,
+      0.0329,
+      0.2492
+     ],
+     "rotation": 90,
+     "visible": 0.94
+    }
+   ]
+  }
+ ],
+ "unassignedPanels": [
+  "centre_front_lower",
+  "centre_nose_lower",
+  "left_mid_lower",
+  "right_mid_lower",
+  "left_front_lower",
+  "right_front_lower",
+  "left_rear_lower",
+  "right_rear_lower",
+  "centre_tail_upper_8",
+  "left_mid_upper_3",
+  "right_mid_upper_2",
+  "left_mid_upper_5",
+  "left_tail_upper_2",
+  "right_tail_upper_2",
+  "centre_tail_lower_3",
+  "right_tail_upper_3"
+ ]
+}

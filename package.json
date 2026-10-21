@@ -1,0 +1,22 @@
+{
+  "name": "ac-livery-kit-for-agents",
+  "version": "0.1.0",
+  "private": true,
+  "description": "An agent layer for Assetto Corsa livery work: a few high-level commands plus skills, built to be driven by small local models",
+  "type": "module",
+  "bin": {
+    "aclivery": "bin/aclivery.mjs"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.mjs"
+  },
+  "engines": {
+    "node": ">=20.9.0"
+  },
+  "license": "PolyForm-Noncommercial-1.0.0",
+  "dependencies": {
+    "ag-psd": "28.2.0",
+    "liverykit": "https://codeload.github.com/mishan/liverykit/tar.gz/f5c56b879f973c89f8e31b2ed806822728727709",
+    "sharp": "^0.35.5"
+  }
+}

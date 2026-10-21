@@ -1,0 +1,16 @@
+{
+  "summary": "A near-white Porsche 911 GT3 R covered in faint grey ink art (feathers, thorny vines, roses) that echoes the artwork on a Monster Energy Ultra can, with cyan accents, a Monster claw and wordmark, and DELS #71 plates. The quiet grey detail is what makes it recognisable.",
+  "feel": "almost white body, discreet grey ink detail everywhere, cyan pops, claw and plates as the loud elements",
+  "layers": [
+    { "kind": "base", "what": "near-white body", "where": "all painted panels", "tone": "bold" },
+    { "kind": "tonal-art", "what": "grey ink feathers, thorny vines and roses", "where": "all body panels: hood sides, fenders, doors, rear quarters, roof edges, rear deck", "tone": "subtle", "notes": "slightly darker than the body, thin dark outlines on the vines, denser around fenders and quarters, sparse on flat areas" },
+    { "kind": "accent", "what": "cyan splatter and brush strokes", "where": "front fender, rear quarter, bumper corners, sills", "tone": "bold" },
+    { "kind": "accent", "what": "cyan lower stripe and splitter edge; cyan mirrors; cyan wing endplates and underside", "where": "sills, splitter, mirrors, wing", "tone": "bold" },
+    { "kind": "large-graphic", "what": "Monster claw (grey/black)", "where": "hood, roof, doors behind the plate", "tone": "bold", "notes": "lighter grey on the hood and roof, dark on the doors" },
+    { "kind": "logo", "what": "MONSTER ENERGY ULTRA wordmark (door), MONSTER ENERGY ABSOLUTELY ZERO (nose, rear), MOTUL, GoPro, PORSCHE (bumper, wing), Papa's House of Game (rear deck)", "where": "doors, nose, rear, wing, bumper", "tone": "bold" },
+    { "kind": "text", "what": "T. THIELE with German flag; POTTSPEED on the side skirts", "where": "rear-window pillar; sills", "tone": "bold" },
+    { "kind": "plate", "what": "DELS #71 door plate cards; GRAN TURISMO windshield banner", "where": "doors (own texture), windshield (own texture)", "tone": "bold" }
+  ],
+  "overlapRules": "Logos stay apart. The grey ink art is the lowest layer and runs behind and around everything. Plate text sits on its card. Nothing else overlaps.",
+  "provenance": "Written by Claude from 15 reference photos (Gran Turismo 7 renders) on 2026-10-21; needs the user's review."
+}

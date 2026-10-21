@@ -1,0 +1,165 @@
+{
+ "slug": "thiele71",
+ "title": "T. Thiele #71 Monster Energy Ultra",
+ "createdAt": "2026-10-21T07:49:58.366Z",
+ "car": {
+  "id": "rss_gtm_protech_p92_f6"
+ },
+ "driver": {
+  "name": "T. Thiele",
+  "number": "71",
+  "country": "DEU",
+  "team": "GT-M Protech"
+ },
+ "baseColour": "white (#f6f6f6)",
+ "references": [
+  {
+   "file": "<AC AI folder>/fotosamples/855000982_1094238246560196_2757428163464498714_n.jpg",
+   "view": "right",
+   "notes": "side: DELS 71 plate, Monster claw + wordmark behind it, POTTSPEED skirt"
+  },
+  {
+   "file": "<AC AI folder>/fotosamples/855000897_1094238043226883_2220851314102465669_n.jpg",
+   "view": "front",
+   "notes": "front: claw on hood, MONSTER ENERGY ABSOLUTELY ZERO, PORSCHE on bumper"
+  },
+  {
+   "file": "<AC AI folder>/fotosamples/854670056_1094238239893530_7750677950587817858_n.jpg",
+   "view": "front-left",
+   "notes": "three-quarter front"
+  }
+ ],
+ "elements": [
+  {
+   "what": "DELS #71 door plate cards",
+   "target": "both doors",
+   "panel": "whole",
+   "texture": "door_plates",
+   "status": "checked"
+  },
+  {
+   "what": "Monster claw (placeholder) + wordmark",
+   "target": "behind the door plate, both sides",
+   "panel": "right_mid/left_mid",
+   "asset": "assets/logos/monster.png",
+   "status": "placed"
+  },
+  {
+   "what": "Monster claw (placeholder)",
+   "target": "hood and roof",
+   "panel": "centre_front/centre_mid",
+   "asset": "assets/logos/claw_placeholder.png",
+   "status": "placed"
+  },
+  {
+   "what": "MONSTER ENERGY ABSOLUTELY ZERO",
+   "target": "nose",
+   "panel": "centre_nose",
+   "asset": "assets/logos/monster.png",
+   "status": "placed",
+   "note": "clipped in the render: wrong panel or size"
+  },
+  {
+   "what": "PORSCHE wordmark",
+   "target": "front bumper",
+   "status": "idea",
+   "needsAsset": false,
+   "note": "asset ready (assets/logos/porsche.png); panel not chosen"
+  },
+  {
+   "what": "Driver name strip T. THIELE + flag",
+   "target": "rear-window pillar",
+   "panel": "right_rear/left_rear",
+   "status": "placed",
+   "note": "on the wrong part (lower quarter) and too big"
+  },
+  {
+   "what": "Cyan mirrors and wing endplates",
+   "target": "mirrors, endplates",
+   "panel": "left_mid_lower_2/right_mid_lower_2/left_tail/right_tail",
+   "status": "checked"
+  },
+  {
+   "what": "Silver ink art (feathers, vines)",
+   "target": "all body panels",
+   "status": "idea",
+   "note": "no asset: ask the team for the original decal files (TODO B2)",
+   "tone": "subtle",
+   "kind": "tonal-art"
+  },
+  {
+   "what": "Cyan splatter, brush strokes, lower stripe, POTTSPEED skirt lettering",
+   "target": "sides, skirts, splitter",
+   "status": "idea",
+   "note": "no asset (TODO B2)"
+  },
+  {
+   "what": "GRAN TURISMO windshield banner",
+   "target": "windshield",
+   "status": "idea",
+   "note": "other texture (TODO B1)"
+  }
+ ],
+ "decisions": [],
+ "openQuestions": [
+  "Does the team have the original decal files (SVG/PNG) for the ink art, splatter and claw?"
+ ],
+ "analysis": {
+  "summary": "A near-white Porsche 911 GT3 R covered in faint grey ink art (feathers, thorny vines, roses) that echoes the artwork on a Monster Energy Ultra can, with cyan accents, a Monster claw and wordmark, and DELS #71 plates. The quiet grey detail is what makes it recognisable.",
+  "feel": "almost white body, discreet grey ink detail everywhere, cyan pops, claw and plates as the loud elements",
+  "layers": [
+   {
+    "kind": "base",
+    "what": "near-white body",
+    "where": "all painted panels",
+    "tone": "bold"
+   },
+   {
+    "kind": "tonal-art",
+    "what": "grey ink feathers, thorny vines and roses",
+    "where": "all body panels: hood sides, fenders, doors, rear quarters, roof edges, rear deck",
+    "tone": "subtle",
+    "notes": "slightly darker than the body, thin dark outlines on the vines, denser around fenders and quarters, sparse on flat areas"
+   },
+   {
+    "kind": "accent",
+    "what": "cyan splatter and brush strokes",
+    "where": "front fender, rear quarter, bumper corners, sills",
+    "tone": "bold"
+   },
+   {
+    "kind": "accent",
+    "what": "cyan lower stripe and splitter edge; cyan mirrors; cyan wing endplates and underside",
+    "where": "sills, splitter, mirrors, wing",
+    "tone": "bold"
+   },
+   {
+    "kind": "large-graphic",
+    "what": "Monster claw (grey/black)",
+    "where": "hood, roof, doors behind the plate",
+    "tone": "bold",
+    "notes": "lighter grey on the hood and roof, dark on the doors"
+   },
+   {
+    "kind": "logo",
+    "what": "MONSTER ENERGY ULTRA wordmark (door), MONSTER ENERGY ABSOLUTELY ZERO (nose, rear), MOTUL, GoPro, PORSCHE (bumper, wing), Papa's House of Game (rear deck)",
+    "where": "doors, nose, rear, wing, bumper",
+    "tone": "bold"
+   },
+   {
+    "kind": "text",
+    "what": "T. THIELE with German flag; POTTSPEED on the side skirts",
+    "where": "rear-window pillar; sills",
+    "tone": "bold"
+   },
+   {
+    "kind": "plate",
+    "what": "DELS #71 door plate cards; GRAN TURISMO windshield banner",
+    "where": "doors (own texture), windshield (own texture)",
+    "tone": "bold"
+   }
+  ],
+  "overlapRules": "Logos stay apart. The grey ink art is the lowest layer and runs behind and around everything. Plate text sits on its card. Nothing else overlaps.",
+  "provenance": "Written by Claude from 15 reference photos (Gran Turismo 7 renders) on 2026-10-21; needs the user's review."
+ }
+}

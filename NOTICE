@@ -1,0 +1,36 @@
+Required Notice: Copyright 2026 Davi de Souza (https://github.com/davigms-pve/AC-livery-kit-for-agents)
+
+AC-livery-kit-for-agents is licensed under the PolyForm Noncommercial License 1.0.0 (see LICENSE).
+https://polyformproject.org/licenses/noncommercial/1.0.0
+
+## Third-party software (installed from npm; not copied into this repository)
+
+| Component | Licence | Use |
+|---|---|---|
+| liverykit (https://github.com/mishan/liverykit), pinned commit f5c56b8 | MIT | the engine: reads .kn5 models, measures UV panels, renders |
+| ag-psd | MIT | reads layer structure from a modder's PSD template |
+| sharp | Apache-2.0 | image processing |
+| libvips prebuilt binaries bundled with sharp (@img/sharp-*) | LGPL-3.0-or-later (and Apache-2.0) | installed by npm as a dependency of sharp; not redistributed by this repository |
+| colord, ac-cardata, base64-js | MIT | dependencies of the above |
+| detect-libc | Apache-2.0 | dependency of sharp |
+| semver | ISC | dependency of sharp |
+| pako | MIT and Zlib | dependency of ag-psd |
+
+Each component's own licence applies to it. This list reflects package-lock.json when written and may become stale.
+
+## What this repository does not contain
+
+- No Assetto Corsa game files, car models (.kn5), car textures or modder template packs, and no brand logos or livery artwork. Those belong to their owners and are
+  never committed (see .gitignore). The repository holds only code, documentation, and measurements about a car's texture layout (panel names, rectangles).
+- No reference photographs.
+
+## Trademarks and affiliation
+
+Assetto Corsa and Kunos Simulazioni, Content Manager, Custom Shaders Patch, Race Sim Studio and the GT-M Protech P92, Porsche, Monster Energy, Gran Turismo and
+Polyphony Digital, Michelin, Motul, GoPro, DELS and other names that appear in the documentation or examples are trademarks or property of their respective
+owners. They are used only to describe the use case. This project is independent and is not affiliated with, endorsed by, or sponsored by any of them.
+
+## Using other people's work in liveries
+
+Liveries often contain third-party trademarks and artwork. The licence of this kit does not grant any rights to them. Make sure you may use a car mod, a template
+and any logo or artwork for your purpose (for example private use versus distribution or sale) before you share what you make.

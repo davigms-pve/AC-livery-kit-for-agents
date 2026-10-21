@@ -1,0 +1,8 @@
+# Third-party brand artwork (logos, decals), game files and derived car data are never committed.
+assets/
+.aclivery/
+dist/
+node_modules/
+*.kn5
+*.dds
+*.psd
