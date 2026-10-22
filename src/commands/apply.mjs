@@ -423,6 +423,22 @@ export async function run(argv) {
     }
   }
 
+  // The fix loop: a build is one round. The review names what to look at and what to fix next, so a model repeats look-fix-build a few times.
+  {
+    const roundFile = path.join(out, '.rounds.json');
+    let round = 1;
+    try { round = (JSON.parse(fs.readFileSync(roundFile, 'utf8')).round ?? 0) + 1; } catch { /* first round */ }
+    fs.writeFileSync(roundFile, JSON.stringify({ round }));
+    const byLayer = {};
+    for (const t of Object.values(design.textures)) for (const e of t.elements) byLayer[layerOf(e)] = (byLayer[layerOf(e)] ?? 0) + 1;
+    const rows = await placementTable(design, pack.profile, assetFile);
+    const cut = rows.filter((r) => r.includes('cut off')), layers = Object.entries(byLayer).map(([k, n]) => `${k} ${n}`).join(', ');
+    console.log(`review, round ${round}: ${Object.keys(design.textures).length} texture(s) [${Object.keys(design.textures).join(', ')}], elements by layer: ${layers}; ${warnings.length} warning(s), ${cut.length} element(s) cut off`);
+    for (const r of cut) console.log('  fix: ' + r.trim().slice(0, 230));
+    for (const w of warnings) console.log('  fix: ' + w.slice(0, 230));
+    if (!flags['no-render']) console.log('  next: open ' + (design.brief ? 'compare.png' : 'sheet.png') + ', name the 3 to 5 biggest differences from the references (a missing part, the wrong size, the wrong place, too faint), change those in the design file, run apply again. Stop when the differences are small, or after 3 rounds.');
+  }
+
   if (flags.export) {
     const pkg = path.join(out, 'pkg');
     fs.rmSync(pkg, { recursive: true, force: true });

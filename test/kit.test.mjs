@@ -541,3 +541,13 @@ test('apply --check: suggests the nearest box fully on the painted surface when 
   assert.ok(box && box[0] + box[2] <= 0.5 + 1e-6 && Math.abs(box[1] - 0.2) < 0.03, JSON.stringify(box));
   assert.equal(nearestInside(pn, 0, [0.1, 0.1, 0.9, 0.9]), null);   // nothing that big fits
 });
+
+test('apply: every build prints a review with the round number, and the round counts up', async () => {
+  const home = tmp(); applyCar(home, 'rv');
+  const dir = tmp(), env = { ACLIVERY_HOME: home }, out = path.join(dir, 'o'), file = path.join(dir, 'd.json');
+  fs.writeFileSync(file, JSON.stringify({ car: 'rv', textures: { ext_main: { elements: [{ panel: 'a', color: '#ff0000', at: [0, 0, 0.2, 0.2] }] } } }));
+  const one = run(['apply', file, '--no-render', '--out', out], env);
+  assert.equal(one.status, 0, one.stderr);
+  assert.match(one.stdout, /review, round 1: 1 texture\(s\) \[ext_main\], elements by layer: paint 1; 0 warning\(s\), 0 element\(s\) cut off/);
+  assert.match(run(['apply', file, '--no-render', '--out', out], env).stdout, /review, round 2:/);
+});
