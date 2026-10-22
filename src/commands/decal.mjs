@@ -87,7 +87,8 @@ export async function run(argv) {
   const scale = Math.min(slot[2] / img.info.width, slot[3] / img.info.height);
   const dw = Math.max(1, Math.round(img.info.width * scale)), dh = Math.max(1, Math.round(img.info.height * scale));
   const box = [slot[0] + (slot[2] - dw) / 2, slot[1] + (slot[3] - dh) / 2, dw, dh];
-  let piece = sharp(img.data).resize(dw, dh);
+  // Resize in its own step, then rotate: sharp runs rotate BEFORE resize inside one pipeline, which would squash or crop a non-square image on a 90/270 panel.
+  let piece = sharp(await sharp(img.data).resize(dw, dh).png().toBuffer());
   if (rot) piece = piece.rotate(rot);
   if (flags.opacity) {
     const k = Math.max(0, Math.min(1, Number(flags.opacity)));

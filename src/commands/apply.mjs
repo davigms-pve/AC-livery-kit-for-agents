@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import sharp from 'sharp';
 import { parseArgs, UsageError } from '../lib/args.mjs';
@@ -50,7 +51,7 @@ export const help = `aclivery apply <design.json> [--out dir] [--check] [--no-re
 
 const LAYERS = ['tone', 'paint', 'logo', 'text'];
 const TOP = ['car', 'name', 'brief', 'colors', 'assets', 'textures', 'skin'];
-const ASSET = ['file', 'prep'], PREP = ['keyBg', 'tint', 'trim', 'size'];
+const ASSET = ['file', 'prep'], PREP = ['keyBg', 'keyLight', 'tint', 'trim', 'size'];
 const TEXTURE = ['fill', 'base', 'size', 'elements'];
 const TEXT_OPTS = ['ink', 'font', 'bold', 'italic', 'spacing', 'outline'];
 const ELEMENT = ['panel', 'panels', 'pattern', 'density', 'seed', 'image', 'color', 'text', 'at', 'opacity', 'rotate', 'overlap', 'label', 'layer', 'lines', ...TEXT_OPTS];
@@ -78,6 +79,21 @@ export const uprightM = (pn, extraRot = 0) => {
   const rot = (((pn.textRotation ?? 0) + extraRot) % 360 + 360) % 360, um = pn.rect[2] * pn.metresPerUv[0], vm = pn.rect[3] * pn.metresPerUv[1];
   return rot % 180 ? [vm, um] : [um, vm];
 };
+/**
+ * How much of a box (fractions of the upright panel: x, y, w, h) lies on painted surface. A panel's rect is only the bounding box of its
+ * UV island; the island itself (`outline`) can be a crescent or have notches, and art outside it is cut off or lands on another part.
+ * Same mapping as decal's rotation. Returns 0..1, or null when the panel has no outline.
+ */
+export function insideIsland(pn, rot, [bx, by, bw, bh], n = 12) {
+  const poly = pn.outline;
+  if (!Array.isArray(poly) || poly.length < 3) return null;
+  const [ru, rv, rw, rh] = pn.rect;
+  const toUv = (fx, fy) => rot === 90 ? [ru + (1 - fy) * rw, rv + fx * rh] : rot === 180 ? [ru + (1 - fx) * rw, rv + (1 - fy) * rh] : rot === 270 ? [ru + fy * rw, rv + (1 - fx) * rh] : [ru + fx * rw, rv + fy * rh];
+  const inPoly = (x, y) => { let c = false; for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) { const [xi, yi] = poly[i], [xj, yj] = poly[j]; if ((yi > y) !== (yj > y) && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) c = !c; } return c; };
+  let inside = 0;
+  for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) { const [u, v] = toUv(bx + ((i + 0.5) / n) * bw, by + ((j + 0.5) / n) * bh); if (inPoly(u, v)) inside++; }
+  return inside / (n * n);
+}
 const patternSeed = (e, name) => `${e.seed ?? 1}:${name}`;
 
 /** Elements in draw order: by layer, then as written. Keeps each element's index in the file for messages. */
@@ -233,6 +249,8 @@ export async function placementTable(design, profile, assetFile = {}) {
         }
         const cm = (v) => Math.round(v * 100);
         row += `  about ${cm(size[0])} x ${cm(size[1])} cm`;
+        const dw = size[0] / upright[0], dh = size[1] / upright[1], within = insideIsland(pn, rot, [at[0] + (at[2] - dw) / 2, at[1] + (at[3] - dh) / 2, dw, dh]);
+        if (within !== null && within < 0.85 && !(e.color !== undefined && !e.at)) row += `  <-- only ${Math.round(within * 100)}% is on painted surface: the rest is cut off`;
         if (pn.centroid3d) row += `, ${pn.centroid3d[0] > 0.05 ? 'left' : pn.centroid3d[0] < -0.05 ? 'right' : 'centre'}, ${pn.centroid3d[1].toFixed(2)} m high`;
         if (pn.visible != null) row += `, vis ${pn.visible.toFixed(2)}`;
       }
@@ -240,6 +258,25 @@ export async function placementTable(design, profile, assetFile = {}) {
     }
   }
   return rows;
+}
+
+/** Prepared copies of the design's assets go to `dir`; assets without "prep" are used where they are. Returns { name: file }. */
+async function prepareAssets(design, dir) {
+  const assetFile = {};
+  fs.mkdirSync(dir, { recursive: true });
+  for (const [aName, a0] of Object.entries(design.assets ?? {})) {
+    const a = typeof a0 === 'string' ? { file: a0 } : a0, src = path.resolve(root, a.file);
+    if (!a.prep) { assetFile[aName] = src; continue; }
+    const dst = path.join(dir, `${aName}.png`), args = ['prep', src, '--out', dst];
+    if (a.prep.keyBg) args.push('--key-bg');
+    if (a.prep.keyLight) args.push('--key-light');
+    if (a.prep.tint) args.push('--tint', a.prep.tint);
+    if (a.prep.trim) args.push('--trim');
+    if (a.prep.size) args.push('--size', String(a.prep.size));
+    await quiet(() => logo(args));
+    assetFile[aName] = dst;
+  }
+  return assetFile;
 }
 
 const slug = (s) => String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'skin';
@@ -261,9 +298,11 @@ export async function run(argv) {
   if (flags.check) {
     console.log(`design ok: ${Object.keys(design.textures).length} texture(s), ${count} element(s)`);
     for (const w of warnings) console.log(`warning: ${w}`);
-    const files = Object.fromEntries(Object.entries(design.assets ?? {}).map(([k, a]) => [k, path.resolve(root, typeof a === 'string' ? a : a.file)]));
-    console.log('where each non-tone element lands (size is approximate; a door is about 0.5-0.8 m high, a roof edge or window strip is above 0.9 m):');
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'aclivery-check-'));
+    const files = await prepareAssets(design, tmpDir);
+    console.log('where each non-tone element lands (size is approximate; "cut off" = part of the box is outside the panel\'s painted island; a door is about 0.5-0.8 m high, a roof edge or window strip is above 0.9 m):');
     for (const row of await placementTable(design, pack.profile, files)) console.log('  ' + row);
+    fs.rmSync(tmpDir, { recursive: true, force: true });
     return 0;
   }
 
@@ -278,19 +317,7 @@ export async function run(argv) {
   fs.writeFileSync(marker, 'made by aclivery apply; rebuilt on every run\n');
   for (const w of warnings) console.log(`warning: ${w}`);
 
-  // Assets: prepared copies go to work/prep, the rest are used where they are.
-  const assetFile = {};
-  for (const [aName, a0] of Object.entries(design.assets ?? {})) {
-    const a = typeof a0 === 'string' ? { file: a0 } : a0, src = path.resolve(root, a.file);
-    if (!a.prep) { assetFile[aName] = src; continue; }
-    const dst = path.join(work, 'prep', `${aName}.png`), args = ['prep', src, '--out', dst];
-    if (a.prep.keyBg) args.push('--key-bg');
-    if (a.prep.tint) args.push('--tint', a.prep.tint);
-    if (a.prep.trim) args.push('--trim');
-    if (a.prep.size) args.push('--size', String(a.prep.size));
-    await quiet(() => logo(args));
-    assetFile[aName] = dst;
-  }
+  const assetFile = await prepareAssets(design, path.join(work, 'prep'));
   const colour = (v) => colourOf(v, design.colors);
   const transparent = [];
 

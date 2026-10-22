@@ -61,3 +61,20 @@ Regions (hand-drawn boxes by the user, aligned with the profile): 1 front_bumper
 - Rear: `centre_tail_upper` is the whole rear bumper strip, rotation 270 and wrapping the corners (upright about 3.1 x 0.6 m, so `at` x runs across the whole bumper and its ends curve round the sides):
   a first placement of the sponsors there came out bunched up and clipped. `centre_tail_upper_3` is the rear deck lid (about 1.9 x 0.6 m).
 - Not verified: how any of this looks in the game.
+
+## Hood, nose and rear bumper layout (verified 2026-10-21 with labelled-grid renders)
+
+- **Hood `centre_front`** (rotation 90, upright about 1.6 x 1.65 m, read from the FRONT of the car): x runs from the car's RIGHT (0) to its LEFT (1); y runs from the windshield (0) to the nose (1).
+  The island is a half-disc, wide at the windshield and rounded at the nose, so keep nose-end art narrow (the lockup fits at `[0.30, 0.70, 0.40, 0.26]`; the claw at `[0.32, 0.22, 0.36, 0.46]`).
+  The rest of the panel's bounding box belongs to the fenders' islands: art there lands on the fenders.
+- **Nose / front bumper cover `centre_nose`** (rotation 90, upright about 2.7 x 0.5 m, read from the front, 0.5 = the car's centre): the upper half is the band under the headlights where PORSCHE sits
+  (`[0.33, 0.12, 0.31, 0.30]` with the prepared 14:1 wordmark gives about 85 x 6 cm). The lower half wraps the intake frame and the corners (where the SC Hassel discs are in the references).
+- **Rear bumper `centre_tail_upper`** (rotation 270, upright about 3.1 x 0.62 m, read from behind, x runs from the car's left to its right, 0.5 = centre): the flat face is about x 0.12-0.88; the ends wrap round the corners.
+  Upper half = the sponsor band under the tail-light bar (MOTUL left and right, the lockup in the middle, a pink 71), lower half = the dark bumper below (GoPro, left). `centre_tail_upper_3` = the rear deck lid (about 1.8 x 0.56 m).
+- Use `aclivery apply --check`: it now says when part of an element's box is outside the panel's own painted island ("cut off").
+
+## Pitfalls found on the way
+
+- **Bug fixed:** `decal`/`text` squashed or cropped any non-square image on a 90 or 270 degree panel (hood, nose, rear bumper), because sharp rotates before it resizes. Earlier renders of wide logos there were wrong
+  for that reason, not because of the layout. A regression test covers it.
+- `assets/logos/monster.png` has a checkerboard baked into its background (no transparency). `aclivery logo prep --key-light --trim` cuts it out cleanly (black MONSTER, light-blue ENERGY, black ULTRA).

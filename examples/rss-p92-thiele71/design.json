@@ -5,7 +5,13 @@
   "cyan": "#4ec4d6"
  },
  "assets": {
-  "monster": "assets/logos/monster.png",
+  "monster": {
+   "file": "assets/logos/monster.png",
+   "prep": {
+    "keyLight": true,
+    "trim": true
+   }
+  },
   "claw": "assets/logos/claw_placeholder.png",
   "porsche": {
    "file": "assets/logos/porsche.png",
@@ -142,10 +148,10 @@
      "panel": "centre_front",
      "image": "claw",
      "at": [
-      0.25,
-      0.08,
-      0.5,
-      0.62
+      0.32,
+      0.22,
+      0.36,
+      0.46
      ]
     },
     {
@@ -174,9 +180,9 @@
      "ink": "#222222",
      "bold": true,
      "at": [
-      0.8,
-      0.7,
-      0.18,
+      0.66,
+      0.66,
+      0.2,
       0.18
      ]
     },
@@ -186,29 +192,39 @@
      "ink": "#222222",
      "bold": true,
      "at": [
-      0.02,
-      0.7,
-      0.18,
+      0.14,
+      0.66,
+      0.2,
       0.18
      ]
     },
     {
-     "panel": "centre_tail_upper",
-     "image": "motul",
+     "panel": "centre_front",
+     "image": "monster",
      "at": [
-      0.04,
-      0.06,
-      0.22,
-      0.36
+      0.3,
+      0.7,
+      0.4,
+      0.26
+     ]
+    },
+    {
+     "panel": "centre_nose",
+     "image": "porsche",
+     "at": [
+      0.33,
+      0.12,
+      0.31,
+      0.3
      ]
     },
     {
      "panel": "centre_tail_upper",
      "image": "motul",
      "at": [
-      0.76,
-      0.06,
-      0.2,
+      0.12,
+      0.08,
+      0.18,
       0.36
      ]
     },
@@ -217,9 +233,9 @@
      "image": "monster",
      "at": [
       0.38,
-      0.08,
+      0.06,
       0.24,
-      0.42
+      0.44
      ]
     },
     {
@@ -229,32 +245,54 @@
      "bold": true,
      "italic": true,
      "at": [
-      0.66,
-      0.1,
+      0.645,
+      0.12,
+      0.05,
+      0.28
+     ]
+    },
+    {
+     "panel": "centre_tail_upper",
+     "image": "motul",
+     "at": [
+      0.7,
       0.08,
-      0.32
+      0.18,
+      0.36
      ]
     },
     {
      "panel": "centre_tail_upper",
      "image": "gopro",
      "at": [
-      0.05,
-      0.55,
-      0.18,
-      0.3
+      0.14,
+      0.46,
+      0.14,
+      0.2
      ]
     },
     {
      "panel": "centre_tail_upper_3",
-     "text": "PAPA'S HOUSE OF GAME",
+     "text": "PAPA'S HOUSE",
      "ink": "#555555",
      "bold": true,
      "at": [
-      0.15,
-      0.25,
-      0.7,
-      0.35
+      0.12,
+      0.12,
+      0.76,
+      0.4
+     ]
+    },
+    {
+     "panel": "centre_tail_upper_3",
+     "text": "OF GAME",
+     "ink": "#555555",
+     "bold": true,
+     "at": [
+      0.38,
+      0.58,
+      0.24,
+      0.2
      ]
     },
     {

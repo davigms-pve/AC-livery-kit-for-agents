@@ -7,8 +7,10 @@ import { root } from '../lib/paths.mjs';
 
 export const help = `aclivery logo fetch <url> --name <name> [--yes]   download one logo into assets/logos/ (asks first)
 aclivery logo inspect <file>                        size, transparency, background, and quality warnings
-aclivery logo prep <in> --out <png> [--key-bg] [--tint #RRGGBB] [--trim] [--size 2000]
+aclivery logo prep <in> --out <png> [--key-bg | --key-light] [--tint #RRGGBB] [--trim] [--size 2000]
     --key-bg  turn a near-uniform background (taken from the corners) transparent
+    --key-light  make light neutral pixels (white, light grey) transparent: for logos with a baked-in checkerboard or a light backdrop that is not one flat colour.
+              Coloured and dark parts stay; light edges become semi-transparent. Check the result on a dark background.
     --tint    recolour every opaque pixel, keeping the shape (for one-colour decals)
     --trim    crop to the artwork    --size  longest side in px (SVG is rasterised at this size)
 Without --yes, fetch only prints what it would do and exits 2: confirm with the user, then re-run with --yes.
@@ -24,7 +26,7 @@ const sniff = (b) =>
         : /^\s*(<\?xml|<svg)/i.test(b.subarray(0, 256).toString('utf8')) ? 'svg' : null;
 
 export async function run(argv) {
-  const { flags, positional } = parseArgs(argv, { bools: ['yes', 'key-bg', 'trim', 'json'] });
+  const { flags, positional } = parseArgs(argv, { bools: ['yes', 'key-bg', 'key-light', 'trim', 'json'] });
   const [sub, target] = positional;
   if (sub === 'fetch') return fetchLogo(target, flags);
   if (sub === 'inspect' && target) return inspect(target, flags);
@@ -127,6 +129,15 @@ async function prep(file, flags) {
     for (let i = 0; i < data.length; i += 4) {
       const dist = Math.max(Math.abs(data[i] - r0), Math.abs(data[i + 1] - g0), Math.abs(data[i + 2] - b0));
       const a = dist <= lo ? 0 : dist >= hi ? 255 : Math.round(((dist - lo) / (hi - lo)) * 255);
+      data[i + 3] = Math.min(data[i + 3], a);
+    }
+  }
+  if (flags['key-light']) {
+    // Neutral (grey-ish) pixels fade out with lightness: 190+ gone, 140 and below kept.
+    for (let i = 0; i < data.length; i += 4) {
+      const mn = Math.min(data[i], data[i + 1], data[i + 2]), mx = Math.max(data[i], data[i + 1], data[i + 2]);
+      if (mx - mn > 16) continue;
+      const a = mn >= 190 ? 0 : mn <= 140 ? 255 : Math.round(((190 - mn) / 50) * 255);
       data[i + 3] = Math.min(data[i + 3], a);
     }
   }

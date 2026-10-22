@@ -444,3 +444,41 @@ test('apply: a texture can start from a base picture (stock stickers kept), not 
   assert.match(w, /elements\[0\] leaves: marks are too strong/);
   assert.match(w, /elements\[1\] cracks: marks are too strong/);
 });
+
+test('decal: a wide image on a 90 or 270 degree panel keeps its proportions (regression: sharp rotated before resizing)', async () => {
+  const home = tmp(), dir = tmp(), env = { ACLIVERY_HOME: home };
+  const car = path.join(home, 'cars', 'rw'); fs.mkdirSync(car, { recursive: true });
+  fs.writeFileSync(path.join(car, 'profile.json'), JSON.stringify({ bind: { body: { roles: ['ext_main'] } },
+    textures: { ext_main: { file: 'EXT_Main.dds', width: 400, height: 200 } },
+    panels: { ext_main: { r90: { rect: [0.25, 0.25, 0.5, 0.5], textRotation: 90 }, r270: { rect: [0.25, 0.25, 0.5, 0.5], textRotation: 270 } } } }));
+  const img = path.join(dir, 'wide.png');   // 40x10, 4:1, red
+  await sharp({ create: { width: 40, height: 10, channels: 3, background: '#ff0000' } }).png().toFile(img);
+  for (const panel of ['r90', 'r270']) {
+    const out = path.join(dir, `${panel}.png`);
+    const r = run(['decal', 'rw', '--panel', panel, '--image', img, '--fill', '#ffffff', '--out', out, '--at', '0,0,1,1'], env);
+    assert.equal(r.status, 0, r.stderr);
+    const { data, info } = await sharp(out).removeAlpha().raw().toBuffer({ resolveWithObject: true });
+    let n = 0, x0 = 1e9, x1 = -1, y0 = 1e9, y1 = -1;
+    for (let y = 0; y < info.height; y++) for (let x = 0; x < info.width; x++) { const o = (y * info.width + x) * 3; if (data[o] > 200 && data[o + 1] < 60) { n++; x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); } }
+    // The panel is 200x100 px; seen upright it is 100 wide x 200 tall, so the 4:1 image becomes 100 x 25 upright: on the texture it is 25 wide x 100 tall.
+    assert.ok(Math.abs((x1 - x0 + 1) - 25) <= 1 && Math.abs((y1 - y0 + 1) - 100) <= 1, `${panel}: ${x1 - x0 + 1} x ${y1 - y0 + 1}`);
+    assert.ok(Math.abs(n - 2500) < 60, `${panel}: ${n} red pixels`);
+  }
+});
+
+test('logo prep --key-light removes a baked checkerboard but keeps dark and coloured parts', async () => {
+  const dir = tmp(), src = path.join(dir, 'in.png'), out = path.join(dir, 'out.png');
+  const w = 40, h = 40, raw = Buffer.alloc(w * h * 3);
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    const o = (y * w + x) * 3, check = ((x >> 2) + (y >> 2)) % 2 ? 255 : 204;     // white and light-grey squares
+    let c = [check, check, check];
+    if (x >= 10 && x < 20 && y >= 10 && y < 30) c = [10, 10, 10];                  // dark glyph
+    if (x >= 22 && x < 30 && y >= 10 && y < 30) c = [100, 170, 235];               // blue part
+    raw[o] = c[0]; raw[o + 1] = c[1]; raw[o + 2] = c[2];
+  }
+  await sharp(raw, { raw: { width: w, height: h, channels: 3 } }).png().toFile(src);
+  assert.equal(run(['logo', 'prep', src, '--out', out, '--key-light']).status, 0);
+  const p = await px(out);
+  assert.equal(p(2, 2)[3], 0); assert.equal(p(6, 2)[3], 0);                        // both checker colours gone
+  assert.equal(p(15, 20)[3], 255); assert.equal(p(25, 20)[3], 255);                // glyph and blue kept
+});
