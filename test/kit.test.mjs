@@ -518,3 +518,26 @@ test('logo prep --erase clears a box so stray bits can be removed', async () => 
   assert.equal(p(5, 5)[3], 255); assert.equal(p(30, 30)[3], 0);
   assert.equal(run(['logo', 'prep', src, '--out', out, '--erase', '1,2']).status, 2);
 });
+
+test('brief: shows the references and takes the base colour from the analysis', async () => {
+  const { gaps, baseColourOf } = await import('../src/commands/brief.mjs');
+  const yes = () => true;
+  const b = { slug: 's', car: { id: 'x' }, references: [{ file: 'a.jpg', view: 'left' }], elements: [{ what: 'x', panel: 'p', asset: 'a.png' }],
+    analysis: { layers: [{ kind: 'base', what: 'near-white pearl', confidence: 'high', evidence: 'a.jpg' }] } };
+  assert.equal(baseColourOf(b), 'near-white pearl');
+  assert.ok(!gaps(b, { packExists: true, fileExists: yes }).some((t) => /base colour/.test(t.ask ?? '')));
+  assert.ok(gaps({ ...b, analysis: { layers: [] } }, { packExists: true, fileExists: yes }).some((t) => /base colour/.test(t.ask ?? '')));
+  const home = tmp(), env = { ACLIVERY_HOME: home };
+  run(['brief', 'init', 'rf', '--title', 'T', '--car', 'c'], env);
+  run(['brief', 'add', 'rf', 'references', '{"file":"C:/x/photo_one.jpg","view":"right"}'], env);
+  assert.match(run(['brief', 'show', 'rf'], env).stdout, /ref 0\. photo_one\.jpg {2}view: right/);
+});
+
+test('apply --check: suggests the nearest box fully on the painted surface when an element is cut off', async () => {
+  const { nearestInside, insideIsland } = await import('../src/commands/apply.mjs');
+  const pn = { rect: [0, 0, 1, 1], textRotation: 0, outline: [[0, 0], [0.5, 0], [0.5, 1], [0, 1]] };   // only the left half is painted
+  assert.ok(insideIsland(pn, 0, [0.6, 0.2, 0.2, 0.2]) < 0.1);
+  const box = nearestInside(pn, 0, [0.6, 0.2, 0.2, 0.2]);
+  assert.ok(box && box[0] + box[2] <= 0.5 + 1e-6 && Math.abs(box[1] - 0.2) < 0.03, JSON.stringify(box));
+  assert.equal(nearestInside(pn, 0, [0.1, 0.1, 0.9, 0.9]), null);   // nothing that big fits
+});

@@ -8,8 +8,8 @@ export const PATTERNS = ['ink-lines', 'leaves', 'cracks', 'splatter', 'brush'];
 export const TONAL = ['ink-lines', 'leaves', 'cracks'];
 /** Colour and opacity used when the design does not give them: a slightly darker tint, quiet on a near-white body. */
 export const DEFAULTS = {
-  'ink-lines': { color: '#9aa0a6', opacity: 0.7 },
-  leaves: { color: '#8e9094', opacity: 0.6 },
+  'ink-lines': { color: '#55585d', opacity: 0.85 },
+  leaves: { color: '#74787e', opacity: 0.9 },
   cracks: { color: '#6f7378', opacity: 0.7 },
   splatter: { color: '#4ec4d6', opacity: 1 },
   brush: { color: '#4ec4d6', opacity: 1 },

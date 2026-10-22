@@ -18,6 +18,9 @@ aclivery brief list                                     all projects
   "overlapRules":"which things must not cover each other","feel":"what makes it recognisable"} (see skill ac-analyze).
   Every layer needs confidence and evidence; low confidence (or a brand read by shape only) becomes a question for the user.`;
 
+/** The body colour: set directly, or read from the analysis's base layer. */
+export const baseColourOf = (b) => b.baseColour ?? b.analysis?.layers?.find((l) => l.kind === 'base')?.what ?? null;
+
 const file = (slug) => path.join(home(), 'projects', slug, 'brief.json');
 const load = (slug) => {
   if (!fs.existsSync(file(slug))) throw new UsageError(`no project "${slug}". Start one: aclivery brief init ${slug} --title "..."`);
@@ -75,7 +78,7 @@ export function gaps(b, { packExists = false, fileExists = (p) => fs.existsSync(
   if (b.analysis?.layers?.some((l) => l.tone === 'subtle') && !(b.elements ?? []).some((e) => e.tone === 'subtle' || /tonal|ink|pattern|texture|art/i.test(e.what ?? ''))) {
     todo.push({ ask: 'The references show subtle tonal art but no element covers it. Add one (a placeholder asset is fine), do not drop it. Is there an original file for it?', add: 'elements' });
   }
-  if (!b.baseColour) todo.push({ ask: 'What is the base colour of the car?', set: 'baseColour' });
+  if (!baseColourOf(b)) todo.push({ ask: 'What is the base colour of the car?', set: 'baseColour' });
   if (!b.elements?.length) todo.push({ ask: 'List what the livery needs: sponsors, text, number, art. One line each.', add: 'elements' });
   b.elements?.forEach((e, i) => {
     if (!e.target && !e.panel) todo.push({ ask: `Where does "${e.what}" go on the car?`, set: `elements.${i}.target` });
@@ -127,8 +130,9 @@ export async function run(argv) {
     const todo = gaps(b, { packExists });
     if (flags.json) { console.log(JSON.stringify({ brief: b, todo })); return 0; }
     console.log(`${b.title}  [${slug}]`);
-    console.log(`  car: ${b.car?.id ?? '?'}${b.car?.id ? (packExists ? '  (car pack ready)' : '  (no car pack yet)') : ''}   base: ${b.baseColour ?? '?'}   driver: ${b.driver?.name ?? '?'} #${b.driver?.number ?? '?'}`);
+    console.log(`  car: ${b.car?.id ?? '?'}${b.car?.id ? (packExists ? '  (car pack ready)' : '  (no car pack yet)') : ''}   base: ${baseColourOf(b) ?? '?'}   driver: ${b.driver?.name ?? '?'} #${b.driver?.number ?? '?'}`);
     console.log(`  references: ${b.references?.length ?? 0}   analysis: ${b.analysis ? (b.analysis.layers?.length ?? 0) + ' layers' : 'not done'}   elements: ${b.elements?.length ?? 0}   decisions: ${b.decisions?.length ?? 0}`);
+    for (const [i, r] of (b.references ?? []).entries()) console.log(`    ref ${i}. ${path.basename(r.file ?? '?')}  view: ${r.view ?? '?'}${r.notes ? '  ' + r.notes : ''}`);
     for (const [i, e] of (b.elements ?? []).entries()) console.log(`    ${i}. ${e.what}  ->  ${e.panel ?? e.target ?? '?'}  [${e.status ?? 'idea'}]${e.asset ? '  ' + path.basename(e.asset) : ''}`);
     if (!todo.length) { console.log('\nNothing missing. Ship it: aclivery export, then check in Content Manager.'); return 0; }
     const [next, ...later] = todo;

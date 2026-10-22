@@ -3,6 +3,14 @@
 Race Sim Studio mod of a Porsche 911 GT3 R (992 era). Facts below were verified on this car on 2026-10-21 unless marked.
 Measurements only; no art. Re-run `aclivery car prep <kn5> --skins <skins dir> [--psd EXT_Main.psd]` to build the pack.
 
+## A complete skin of this car has (checklist, 2026-10-22: use it before saying you are done)
+
+- **Body `ext_main`**: tonal art everywhere (generated `leaves`, `ink-lines`, `cracks` placeholders), cyan blots and solid cyan parts (mirrors, wing endplates, splitter and diffuser edges), the claw and the lockup on hood, roof, doors, rear and wing,
+  PORSCHE on the bumper cover, MOTUL / GoPro / pink 71 / TOW on the rear, POTTSPEED on the sills with a black band, the driver name and flag on the roof-edge strips, SC discs, dark carbon parts (splitter, diffuser, wing underside and uprights, fender vents with slats).
+- **`door_plates`**: a white DELS 71 card on each door. **`hr_generic`** (start from the stock file): the GRAN TURISMO windshield banner. **`glass_2`** (start from the stock file): black rear-quarter windows and the DELS rear window banner.
+  **`le_god_grille`**: DELS on the front centre grille.
+- Details for each are below. Leaving one out is the most common gap.
+
 ## Textures a skin can override
 
 - **Body `EXT_Main.dds`**: 8192x2956 (role `ext_main`), 69 panels. The unmodified green skin of this size shows in the game's preview. Atlas: the car's

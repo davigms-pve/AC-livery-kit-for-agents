@@ -94,6 +94,20 @@ export function insideIsland(pn, rot, [bx, by, bw, bh], n = 12) {
   for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) { const [u, v] = toUv(bx + ((i + 0.5) / n) * bw, by + ((j + 0.5) / n) * bh); if (inPoly(u, v)) inside++; }
   return inside / (n * n);
 }
+/**
+ * The box of the same size, moved the least, that lies fully (97%+) on the panel's painted island, or null if there is none.
+ * Used to suggest a fix when an element is cut off. Boxes are [x, y, w, h] fractions of the upright panel.
+ */
+export function nearestInside(pn, rot, box, step = 0.02) {
+  const [bx, by, bw, bh] = box;
+  let best = null;
+  for (let x = 0; x <= 1 - bw + 1e-9; x += step) for (let y = 0; y <= 1 - bh + 1e-9; y += step) {
+    const dist = Math.hypot(x - bx, y - by);
+    if (best && dist >= best.dist) continue;
+    if (insideIsland(pn, rot, [x, y, bw, bh], 8) >= 0.97) best = { dist, box: [+x.toFixed(2), +y.toFixed(2), bw, bh] };
+  }
+  return best?.box ?? null;
+}
 const patternSeed = (e, name) => `${e.seed ?? 1}:${name}`;
 
 /** Elements in draw order: by layer, then as written. Keeps each element's index in the file for messages. */
@@ -251,7 +265,10 @@ export async function placementTable(design, profile, assetFile = {}) {
         const cm = (v) => Math.round(v * 100);
         row += `  about ${cm(size[0])} x ${cm(size[1])} cm`;
         const dw = size[0] / upright[0], dh = size[1] / upright[1], within = insideIsland(pn, rot, [at[0] + (at[2] - dw) / 2, at[1] + (at[3] - dh) / 2, dw, dh]);
-        if (within !== null && within < 0.85 && !(e.color !== undefined && !e.at)) row += `  <-- only ${Math.round(within * 100)}% is on painted surface: the rest is cut off`;
+        if (within !== null && within < 0.85 && !(e.color !== undefined && !e.at)) {
+          const box = [at[0] + (at[2] - dw) / 2, at[1] + (at[3] - dh) / 2, dw, dh], near = nearestInside(pn, rot, box);
+          row += `  <-- only ${Math.round(within * 100)}% is on painted surface: the rest is cut off` + (near ? `. Nearest box fully on it, same size: "at": [${near.map((n) => +n.toFixed(3)).join(', ')}] (the element is centred in "at": use a box of this size if it is not square)` : '. No place of this size fits: make it smaller');
+        }
         if (pn.centroid3d) row += `, ${pn.centroid3d[0] > 0.05 ? 'left' : pn.centroid3d[0] < -0.05 ? 'right' : 'centre'}, ${pn.centroid3d[1].toFixed(2)} m high`;
         if (pn.visible != null) row += `, vis ${pn.visible.toFixed(2)}`;
       }
