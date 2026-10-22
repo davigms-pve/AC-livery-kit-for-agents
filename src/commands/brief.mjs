@@ -13,8 +13,10 @@ aclivery brief list                                     all projects
   An element is one thing the livery needs: {"what":"Monster logo","target":"both rear quarters","panel":"left_rear",
   "asset":"assets/logos/monster.png","kind":"logo|text|plate|accent|tonal-art|large-graphic","tone":"subtle|bold",
   "status":"idea|asset-ready|placed|checked"}.
-  analysis: {"summary":"...","layers":[{"kind":"tonal-art","what":"grey ink feathers","where":"all body panels","tone":"subtle"}],
-  "overlapRules":"which things must not cover each other","feel":"what makes it recognisable"} (see skill ac-analyze).`;
+  analysis: {"summary":"...","layers":[{"kind":"logo","what":"Monster claw","brand":"Monster Energy","part":"symbol","where":"doors, hood",
+  "tone":"bold","confidence":"high|medium|low","evidence":"which reference photo and view shows it"}],
+  "overlapRules":"which things must not cover each other","feel":"what makes it recognisable"} (see skill ac-analyze).
+  Every layer needs confidence and evidence; low confidence (or a brand read by shape only) becomes a question for the user.`;
 
 const file = (slug) => path.join(home(), 'projects', slug, 'brief.json');
 const load = (slug) => {
@@ -53,6 +55,22 @@ export function gaps(b, { packExists = false, fileExists = (p) => fs.existsSync(
   // often what makes a livery recognisable; it must be listed and planned, not skipped for lack of an asset.
   if (b.references?.length && !b.analysis) {
     todo.push({ ask: null, do: 'study the references (skill ac-analyze): list the base, big graphics, SUBTLE tonal art, accents, logos, text, plates, and what must not overlap', set: 'analysis' });
+  }
+  // Self-critique of the analysis: every layer says how sure it is and which photo shows it. Doubt becomes a question for the
+  // user (grounded in the evidence), not a guess built into the livery.
+  const layers = b.analysis?.layers ?? [];
+  const CONF = ['high', 'medium', 'low'];
+  const unrated = layers.map((l, i) => ({ l, i })).filter(({ l }) => !CONF.includes(l.confidence) || !String(l.evidence ?? '').trim());
+  if (unrated.length) {
+    todo.push({ ask: null, do: `review your analysis: for each layer add "confidence" (high = clearly seen and identified in a photo; medium = seen but small, or identified by shape or context only; low = a guess) and "evidence" (which reference photo and view shows it). Missing on: ${unrated.map(({ l, i }) => `${i} "${l.what ?? l.kind}"`).join(', ')}`, set: `analysis.layers.${unrated[0].i}.confidence` });
+  } else {
+    layers.forEach((l, i) => {
+      if (l.confidence === 'low') {
+        todo.push({ ask: `I am not sure about "${l.what}" (evidence: ${l.evidence}). What is it, and how would you describe it?`, set: `analysis.layers.${i}.what`, then: `aclivery brief set ${b.slug ?? '<slug>'} analysis.layers.${i}.confidence high` });
+      } else if (l.confidence === 'medium' && l.brand && /logo|large-graphic/.test(l.kind ?? '')) {
+        todo.push({ ask: `I read "${l.what}" as ${l.brand}${l.part ? ' ' + l.part : ''} (evidence: ${l.evidence}). Is that right?`, do: 'if yes, set confidence high; if not, correct "brand" and "what" first', set: `analysis.layers.${i}.confidence` });
+      }
+    });
   }
   if (b.analysis?.layers?.some((l) => l.tone === 'subtle') && !(b.elements ?? []).some((e) => e.tone === 'subtle' || /tonal|ink|pattern|texture|art/i.test(e.what ?? ''))) {
     todo.push({ ask: 'The references show subtle tonal art but no element covers it. Add one (a placeholder asset is fine), do not drop it. Is there an original file for it?', add: 'elements' });
@@ -117,6 +135,7 @@ export async function run(argv) {
     console.log('\nNEXT' + (next.ask ? ` (ask the user): ${next.ask}` : ':'));
     if (next.do) console.log(`  do: ${next.do}`);
     if (next.set) console.log(`  record the answer: aclivery brief set ${slug} ${next.set} "<answer>"`);
+    if (next.then) console.log(`  then: ${next.then}`);
     if (next.add) console.log(`  record the answer: aclivery brief add ${slug} ${next.add} '<json>'`);
     if (next.blocked) console.log(`  blocks: ${next.blocked}. If the user has no .kn5, see docs/user-journey.md "when something is missing".`);
     if (later.length) console.log(`  (${later.length} more after this)`);

@@ -36,6 +36,7 @@ short skills that tell a model how to drive them.**
 ```
 aclivery car prep <car.kn5> --skins <skins dir>   one-time: build the car pack
 aclivery panel list|get|regions|textures <car>    which panels exist, where, which way up
+aclivery apply design.json [--export]            build the whole skin from one design file (assets, layers, sheet, zip)
 aclivery decal <car> --panel left_mid --image logo.png --out work/EXT_Main.png
 aclivery text <car> --panel right_rear --text "T. THIELE" --out work/EXT_Main.png
 aclivery compare <car> --skin work --brief <slug>  reference photo next to our render from the same view
@@ -74,7 +75,7 @@ by the kit go to the gitignored `assets/` folder.
 - [docs/milestones.md](docs/milestones.md): the Haiku milestone and when Hermes comes back; [eval/](eval) holds the run prompt and rubric
 - [docs/session-log/2026-10-21.md](docs/session-log/2026-10-21.md): the story and reasoning of the first session
 - [docs/architecture.md](docs/architecture.md): the design rules and why
-- [examples/rss-p92-thiele71/build.sh](examples/rss-p92-thiele71/build.sh): a rough first pass built only with the commands
+- [examples/rss-p92-thiele71/design.json](examples/rss-p92-thiele71/design.json): a rough first pass as one design file (`build.sh` runs it)
 - [docs/use-cases/rss-p92-thiele71.md](docs/use-cases/rss-p92-thiele71.md): the use case that started this, with what is verified and what is not
 - [docs/research/landscape.md](docs/research/landscape.md): what already exists (tools, repos, formats) and the gaps
 - [AGENTS.md](AGENTS.md): rules for agents working on this repo

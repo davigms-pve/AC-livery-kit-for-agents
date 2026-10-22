@@ -1,0 +1,393 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import sharp from 'sharp';
+import { parseArgs, UsageError } from '../lib/args.mjs';
+import { loadPack, root } from '../lib/paths.mjs';
+import { quiet } from '../lib/quiet.mjs';
+import { run as decal } from './decal.mjs';
+import { run as text, textImage } from './text.mjs';
+import { run as logo } from './logo.mjs';
+import { run as car } from './car.mjs';
+import { run as render } from './render.mjs';
+import { run as compare } from './compare.mjs';
+import { run as exportSkin } from './export.mjs';
+import { decodeTexture } from '../engine.mjs';
+import { PATTERNS, TONAL, DEFAULTS, DEFAULT_DENSITY, DISCREET, makePattern, renderPattern, luma } from '../lib/patterns.mjs';
+
+export const help = `aclivery apply <design.json> [--out dir] [--check] [--no-render] [--export]
+  Builds the whole skin from one design file: prepares the assets, draws every element in layer order, renders a
+  contact sheet. The file is checked first; every problem is listed before anything is drawn. Same file, same skin.
+    --check      only check the file (panels, assets, colours, boxes), print where every element lands and about how big, and stop
+    --no-render  skip the contact sheet and the reference comparison
+    --export     also write ui_skin.json + preview.jpg and encode DDS + zip for Content Manager
+    --out        build folder (default assets/builds/<name>): work/ (PNG textures), sheet.png, dist/
+  Design file (JSON). Paths are relative to the repo root. Unknown keys are errors.
+    { "car": "<id>", "name": "Skin name", "brief": "<slug, optional: compare with its references>",
+      "colors":   { "accent": "#336699" },
+      "assets":   { "logo": "assets/logos/logo.png",
+                    "mark": { "file": "assets/logos/mark.png", "prep": { "keyBg": true, "tint": "#222222", "trim": true } } },
+      "textures": { "<texture role>":  { "fill": "#f6f6f6", "elements": [ ...elements ] },
+                    "<cut-out role>":  { "fill": "transparent", "size": "WxH", "elements": [ ...elements ] } },
+      "skin":     { "skinname": "...", "drivername": "...", "country": "...", "team": "...", "number": "..." } }
+  Element (exactly one of image / color / text; "panel" is a panel name from aclivery panel list):
+    { "panel": "<panel>", "image": "<asset name>", "at": [0.1, 0.2, 0.4, 0.5] }    an asset, upright, kept in proportion
+    { "panel": "<panel>", "color": "<colour name or #rrggbb>" }                    paint the panel (or the "at" box)
+    { "panel": "<panel>", "text": "A. DRIVER", "ink": "#222222", "bold": true, "at": [0.2, 0.7, 0.5, 0.1] }
+    { "panel": "whole", "color": "#ffffff", "at": [x, y, w, h],                     a card with text lines; each line's "at" is
+      "lines": [ { "text": "7", "at": [0.1, 0.1, 0.8, 0.8] } ] }                    relative to the card
+    { "pattern": "ink-lines", "panels": "visible", "density": 0.8, "seed": 1 }       generated art, no file needed (see below)
+    optional: "opacity" 0..1, "rotate" 0/90/180/270, "label", "overlap": true (a real exception), "layer".
+    text options: ink, font, bold, italic, spacing, outline.
+  Layers are drawn in this order whatever the order in the file: "tone" (quiet background art, logos may sit on it),
+  "paint" (solid colours, the default for color), "logo" (the default for image), "text" (the default for text).
+  Patterns (placeholders when there is no original art): quiet tonal art "ink-lines" (faint vines and feathers), "leaves"
+  (soft grey leaf clusters, like the can's scrollwork), "cracks" (fine branching lines); bold colour "splatter", "brush". "panels" is a list of panel names or "visible" (every well-seen panel); optional "color",
+  "opacity", "density" 0..1, "seed" (same seed, same art). They never block logos. --check warns if tonal patterns would not be discreet.
+  A texture "base" (a .png or .dds, instead of "fill") is the starting picture: use it for textures that already hold stickers the car
+  uses (HR_Generic on the P92 holds the N/E/arrow markings next to the windshield banner), so only your parts change.
+  A texture "fill" is the starting colour ("transparent" for cut-out textures like door plates, exported as DXT5);
+  "size" records the texture's real size in the car pack (same as aclivery car size).`;
+
+const LAYERS = ['tone', 'paint', 'logo', 'text'];
+const TOP = ['car', 'name', 'brief', 'colors', 'assets', 'textures', 'skin'];
+const ASSET = ['file', 'prep'], PREP = ['keyBg', 'tint', 'trim', 'size'];
+const TEXTURE = ['fill', 'base', 'size', 'elements'];
+const TEXT_OPTS = ['ink', 'font', 'bold', 'italic', 'spacing', 'outline'];
+const ELEMENT = ['panel', 'panels', 'pattern', 'density', 'seed', 'image', 'color', 'text', 'at', 'opacity', 'rotate', 'overlap', 'label', 'layer', 'lines', ...TEXT_OPTS];
+const LINE = ['text', 'at', ...TEXT_OPTS];
+const HEX = /^#[0-9a-f]{6}$/i;
+
+const isObj = (v) => v && typeof v === 'object' && !Array.isArray(v);
+const colourOf = (v, colors) => (typeof v === 'string' && (colors?.[v] ?? v));
+const validAt = (a) => Array.isArray(a) && a.length === 4 && a.every((n) => typeof n === 'number' && n >= 0 && n <= 1) && a[2] > 0 && a[3] > 0 && a[0] + a[2] <= 1.0001 && a[1] + a[3] <= 1.0001;
+
+/** The layer an element is drawn in. */
+export const layerOf = (e) => e.layer ?? (e.pattern ? (TONAL.includes(e.pattern) ? 'tone' : 'paint') : e.image ? 'logo' : e.text ? 'text' : 'paint');
+
+/** "visible" patterns cover every panel that is well seen from outside and big enough to matter. */
+export const AUTO = { minVisible: 0.4, minAreaM2: 0.03 };
+const areaM2 = (pn) => pn.rect[2] * pn.metresPerUv[0] * pn.rect[3] * pn.metresPerUv[1];
+/** The panel names an element covers (one panel, a list, or "visible"). */
+export function panelsOf(e, profile, role) {
+  if (e.panels === 'visible') return Object.entries(profile.panels?.[role] ?? {}).filter(([, p]) => p.metresPerUv && (p.visible ?? 1) >= AUTO.minVisible && areaM2(p) >= AUTO.minAreaM2).map(([n]) => n);
+  if (Array.isArray(e.panels)) return e.panels;
+  return e.panel ? [e.panel] : [];
+}
+/** A panel's real size as the viewer sees it upright: [width, height] in metres. */
+export const uprightM = (pn, extraRot = 0) => {
+  const rot = (((pn.textRotation ?? 0) + extraRot) % 360 + 360) % 360, um = pn.rect[2] * pn.metresPerUv[0], vm = pn.rect[3] * pn.metresPerUv[1];
+  return rot % 180 ? [vm, um] : [um, vm];
+};
+const patternSeed = (e, name) => `${e.seed ?? 1}:${name}`;
+
+/** Elements in draw order: by layer, then as written. Keeps each element's index in the file for messages. */
+export function drawOrder(elements) {
+  return elements.map((e, i) => ({ e, i })).sort((a, b) => LAYERS.indexOf(layerOf(a.e)) - LAYERS.indexOf(layerOf(b.e)) || a.i - b.i);
+}
+
+/**
+ * Check a design against a car pack. Returns a list of problems (empty = fine). Pure: no drawing, no files read except
+ * through `fileExists`, so a model gets every mistake in one go instead of one per run.
+ */
+export function validateDesign(d, profile, fileExists = (p) => fs.existsSync(p)) {
+  const bad = [];
+  const unknown = (where, o, allowed) => { for (const k of Object.keys(o)) if (!allowed.includes(k)) bad.push(`${where}: unknown key "${k}" (allowed: ${allowed.join(', ')})`); };
+  if (!isObj(d)) return ['the design must be a JSON object'];
+  unknown('design', d, TOP);
+  if (typeof d.car !== 'string') bad.push('design.car: the car folder id is required');
+  if (d.name !== undefined && !/^[\w .-]+$/.test(String(d.name))) bad.push('design.name: letters, digits, space, . _ - only');
+  for (const [k, v] of Object.entries(d.colors ?? {})) if (!HEX.test(v)) bad.push(`colors.${k}: "${v}" is not a hex colour like #4ec4d6`);
+
+  const assets = d.assets ?? {};
+  for (const [name, a0] of Object.entries(assets)) {
+    const a = typeof a0 === 'string' ? { file: a0 } : a0;
+    if (!isObj(a) || typeof a.file !== 'string') { bad.push(`assets.${name}: give a file path, or { "file": ..., "prep": ... }`); continue; }
+    unknown(`assets.${name}`, a, ASSET);
+    if (!fileExists(path.resolve(root, a.file))) bad.push(`assets.${name}: file not found: ${a.file} (paths are relative to the repo root)`);
+    if (a.prep !== undefined) {
+      if (!isObj(a.prep)) bad.push(`assets.${name}.prep: must be an object`);
+      else {
+        unknown(`assets.${name}.prep`, a.prep, PREP);
+        if (a.prep.tint !== undefined && !HEX.test(a.prep.tint)) bad.push(`assets.${name}.prep.tint: not a hex colour`);
+      }
+    }
+  }
+
+  const textures = d.textures;
+  if (!isObj(textures) || !Object.keys(textures).length) { bad.push('design.textures: at least one texture role is required, for example "ext_main"'); return bad; }
+  const colourOk = (v) => typeof v === 'string' && (HEX.test(colourOf(v, d.colors) ?? ''));
+  const checkText = (where, o) => {
+    if (typeof o.text !== 'string' || !o.text || o.text.length > 60) bad.push(`${where}.text: 1 to 60 characters`);
+    if (o.ink !== undefined && !colourOk(o.ink)) bad.push(`${where}.ink: "${o.ink}" is neither a hex colour nor a name in "colors"`);
+    if (o.outline !== undefined && !colourOk(o.outline)) bad.push(`${where}.outline: not a colour`);
+  };
+  for (const [role, t] of Object.entries(textures)) {
+    const tex = profile.textures?.[role];
+    if (!tex) { bad.push(`textures.${role}: the car has no such texture. Known: ${Object.keys(profile.textures ?? {}).slice(0, 12).join(', ')} (aclivery panel textures <car>)`); continue; }
+    if (!isObj(t)) { bad.push(`textures.${role}: must be an object`); continue; }
+    unknown(`textures.${role}`, t, TEXTURE);
+    if (t.fill !== undefined && t.fill !== 'transparent' && !colourOk(t.fill)) bad.push(`textures.${role}.fill: a hex colour, a name in "colors", or "transparent"`);
+    if (t.size !== undefined && !/^\d+x\d+$/.test(String(t.size))) bad.push(`textures.${role}.size: like 2048x640`);
+    if (t.base !== undefined && (typeof t.base !== 'string' || !/\.(png|dds)$/i.test(t.base) || !fileExists(path.resolve(root, t.base)))) bad.push(`textures.${role}.base: a .png or .dds file that exists (paths are relative to the repo root): ${t.base}`);
+    if (t.base !== undefined && t.fill !== undefined) bad.push(`textures.${role}: give "base" or "fill", not both (base is the starting picture)`);
+    if (!Array.isArray(t.elements) || !t.elements.length) { bad.push(`textures.${role}.elements: a non-empty list`); continue; }
+    t.elements.forEach((e, i) => {
+      const where = `${role}.elements[${i}]`;
+      if (!isObj(e)) { bad.push(`${where}: must be an object`); return; }
+      unknown(where, e, ELEMENT);
+      if (e.pattern !== undefined) {
+        if (!PATTERNS.includes(e.pattern)) bad.push(`${where}.pattern: one of ${PATTERNS.join(', ')}`);
+        for (const k of ['image', 'text', 'lines', 'at', 'rotate', 'overlap', ...TEXT_OPTS]) if (e[k] !== undefined) bad.push(`${where}.${k}: not for patterns (a pattern fills each panel)`);
+        if ((e.panel === undefined) === (e.panels === undefined)) bad.push(`${where}: give "panel" or "panels" (a list, or "visible")`);
+        const names = panelsOf(e, profile, role);
+        if (e.panels !== undefined && e.panels !== 'visible' && (!Array.isArray(e.panels) || !e.panels.length)) bad.push(`${where}.panels: a non-empty list of panel names, or "visible"`);
+        else if (!names.length) bad.push(`${where}: no panels selected`);
+        for (const n of names) if (!profile.panels?.[role]?.[n]?.metresPerUv) bad.push(`${where}: panel "${n}" has no measured size in ${role}, so a pattern cannot be scaled to it (aclivery panel list <car> --texture ${role})`);
+        if (e.color !== undefined && !colourOk(e.color)) bad.push(`${where}.color: not a hex colour or a name in "colors"`);
+        if (e.density !== undefined && !(typeof e.density === 'number' && e.density > 0 && e.density <= 1)) bad.push(`${where}.density: above 0, up to 1`);
+        if (e.seed !== undefined && !Number.isInteger(e.seed)) bad.push(`${where}.seed: a whole number`);
+        if (e.opacity !== undefined && !(typeof e.opacity === 'number' && e.opacity >= 0 && e.opacity <= 1)) bad.push(`${where}.opacity: 0..1`);
+        if (e.layer !== undefined && !LAYERS.includes(e.layer)) bad.push(`${where}.layer: one of ${LAYERS.join(', ')}`);
+        return;
+      }
+      for (const k of ['panels', 'density', 'seed']) if (e[k] !== undefined) bad.push(`${where}.${k}: only on pattern elements`);
+      const kinds = ['image', 'color', 'text'].filter((k) => e[k] !== undefined);
+      if (kinds.length !== 1) bad.push(`${where}: give exactly one of image / color / text (found ${kinds.join(', ') || 'none'})`);
+      if (!e.panel || !profile.panels?.[role]?.[e.panel]) bad.push(`${where}.panel: no panel "${e.panel}" in ${role}. Try: aclivery panel list <car> --texture ${role}`);
+      if (e.image !== undefined && !(e.image in assets)) bad.push(`${where}.image: "${e.image}" is not in "assets" (have: ${Object.keys(assets).join(', ') || 'none'})`);
+      if (e.color !== undefined && !colourOk(e.color)) bad.push(`${where}.color: "${e.color}" is neither a hex colour nor a name in "colors"`);
+      if (e.text !== undefined) checkText(where, e);
+      if (e.at !== undefined && !validAt(e.at)) bad.push(`${where}.at: four fractions [x, y, w, h], each 0..1, staying inside the panel`);
+      if (e.opacity !== undefined && !(typeof e.opacity === 'number' && e.opacity >= 0 && e.opacity <= 1)) bad.push(`${where}.opacity: 0..1`);
+      if (e.rotate !== undefined && ![0, 90, 180, 270].includes(e.rotate)) bad.push(`${where}.rotate: 0, 90, 180 or 270`);
+      if (e.layer !== undefined && !LAYERS.includes(e.layer)) bad.push(`${where}.layer: one of ${LAYERS.join(', ')}`);
+      if (e.lines !== undefined) {
+        if (e.color === undefined || !Array.isArray(e.lines) || !e.lines.length) bad.push(`${where}.lines: a non-empty list, and only on a color element (a card)`);
+        else e.lines.forEach((l, j) => {
+          const lw = `${where}.lines[${j}]`;
+          if (!isObj(l)) { bad.push(`${lw}: must be an object`); return; }
+          unknown(lw, l, LINE); checkText(lw, l);
+          if (!validAt(l.at)) bad.push(`${lw}.at: four fractions relative to the card`);
+        });
+      }
+      if (e.text === undefined) for (const k of TEXT_OPTS) if (e[k] !== undefined) bad.push(`${where}.${k}: only on text elements`);
+    });
+  }
+  return bad;
+}
+
+/**
+ * Warnings (not errors): tonal ink that would not be discreet. "Discreet" = strokes only a little darker than the body and
+ * little of the body covered; the thresholds are heuristics, the owner's eye is the real test.
+ */
+export function designWarnings(design, profile) {
+  const out = [];
+  for (const [role, t] of Object.entries(design.textures)) {
+    if (t.fill === 'transparent') continue;
+    const fill = luma(colourOf(t.fill ?? '#ffffff', design.colors));
+    t.elements.forEach((e, i) => {
+      if (!TONAL.includes(e.pattern) || layerOf(e) !== 'tone' || fill == null) return;
+      const limit = DISCREET[e.pattern];
+      const color = colourOf(e.color ?? DEFAULTS[e.pattern].color, design.colors), opacity = e.opacity ?? DEFAULTS[e.pattern].opacity;
+      const contrast = Math.abs(fill - luma(color)) * opacity;
+      let covered = 0, area = 0;
+      for (const name of panelsOf(e, profile, role)) {
+        const [w, h] = uprightM(profile.panels[role][name]);
+        covered += makePattern(e.pattern, { widthM: w, heightM: h, pxPerM: 1, seed: patternSeed(e, name), density: e.density ?? DEFAULT_DENSITY, color }).coverage * w * h; area += w * h;
+      }
+      const shift = area ? (covered / area) * contrast : 0, where = `${role}.elements[${i}] ${e.pattern}`;
+      if (contrast > limit.strokeContrast) out.push(`${where}: marks are too strong (contrast ${contrast.toFixed(2)}, discreet is up to ${limit.strokeContrast}). Use a colour closer to the body or lower "opacity".`);
+      if (shift > limit.meanShift) out.push(`${where}: covers about ${(100 * covered / area).toFixed(1)}% of the panels and would darken the body by ${(100 * shift).toFixed(1)}% (discreet is up to ${100 * limit.meanShift}%). Lower "density".`);
+    });
+  }
+  return out;
+}
+
+/**
+ * One line per non-tone element: where it lands on the car and about how big it will be. Lets a model (and a person)
+ * catch "name on the roof-edge strip, 5 cm tall" before rendering. Sizes come from the panel's metresPerUv: approximate,
+ * not verified against the game.
+ */
+export async function placementTable(design, profile, assetFile = {}) {
+  const rows = [];
+  for (const [role, t] of Object.entries(design.textures)) {
+    for (const [i, e] of t.elements.entries()) {
+      if (layerOf(e) === 'tone') continue;
+      if (e.pattern) { rows.push(`${role}[${i}] pattern ${e.pattern} on ${panelsOf(e, profile, role).length} panel(s), ${e.color ?? DEFAULTS[e.pattern].color}`); continue; }
+      const pn = profile.panels?.[role]?.[e.panel];
+      const what = e.image ?? e.text ?? e.color;
+      let row = `${role}[${i}] ${String(what).slice(0, 22).padEnd(22)} on ${e.panel}`;
+      if (pn?.metresPerUv) {
+        const rot = (((pn.textRotation ?? 0) + (e.rotate ?? 0)) % 360 + 360) % 360;
+        const um = pn.rect[2] * pn.metresPerUv[0], vm = pn.rect[3] * pn.metresPerUv[1];
+        const upright = rot % 180 ? [vm, um] : [um, vm];
+        const at = e.at ?? (e.color && e.image === undefined ? [0, 0, 1, 1] : [0.05, 0.05, 0.9, 0.9]);
+        const slot = [at[2] * upright[0], at[3] * upright[1]];
+        let size = slot;
+        if (e.image && assetFile[e.image] && fs.existsSync(assetFile[e.image])) {
+          const m = await sharp(assetFile[e.image]).metadata(), s = Math.min(slot[0] / m.width, slot[1] / m.height);
+          size = [m.width * s, m.height * s];
+        } else if (e.text) {
+          const m = await sharp(await textImage(e.text, { bold: !!e.bold, italic: !!e.italic })).metadata(), s = Math.min(slot[0] / m.width, slot[1] / m.height);
+          size = [m.width * s, m.height * s];
+        }
+        const cm = (v) => Math.round(v * 100);
+        row += `  about ${cm(size[0])} x ${cm(size[1])} cm`;
+        if (pn.centroid3d) row += `, ${pn.centroid3d[0] > 0.05 ? 'left' : pn.centroid3d[0] < -0.05 ? 'right' : 'centre'}, ${pn.centroid3d[1].toFixed(2)} m high`;
+        if (pn.visible != null) row += `, vis ${pn.visible.toFixed(2)}`;
+      }
+      rows.push(row);
+    }
+  }
+  return rows;
+}
+
+const slug = (s) => String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'skin';
+const fmt = (n) => Number(n.toFixed(4));
+
+export async function run(argv) {
+  const { flags, positional } = parseArgs(argv, { bools: ['check', 'export', 'no-render'] });
+  const [file] = positional;
+  if (!file) throw new UsageError(help);
+  let design;
+  try { design = JSON.parse(fs.readFileSync(path.resolve(file), 'utf8')); }
+  catch (e) { throw new UsageError(`cannot read ${file} as JSON: ${e.message}`); }
+  if (typeof design?.car !== 'string') throw new UsageError('design.car: the car folder id is required');
+  const pack = loadPack(design.car);
+  const problems = validateDesign(design, pack.profile);
+  if (problems.length) throw new UsageError(`${file}: ${problems.length} problem(s), nothing drawn:\n  - ${problems.join('\n  - ')}`);
+  const warnings = designWarnings(design, pack.profile);
+  const count = Object.values(design.textures).reduce((n, t) => n + t.elements.length, 0);
+  if (flags.check) {
+    console.log(`design ok: ${Object.keys(design.textures).length} texture(s), ${count} element(s)`);
+    for (const w of warnings) console.log(`warning: ${w}`);
+    const files = Object.fromEntries(Object.entries(design.assets ?? {}).map(([k, a]) => [k, path.resolve(root, typeof a === 'string' ? a : a.file)]));
+    console.log('where each non-tone element lands (size is approximate; a door is about 0.5-0.8 m high, a roof edge or window strip is above 0.9 m):');
+    for (const row of await placementTable(design, pack.profile, files)) console.log('  ' + row);
+    return 0;
+  }
+
+  const name = design.name ?? path.parse(file).name;
+  const out = path.resolve(flags.out ?? path.join(root, 'assets', 'builds', slug(name)));
+  const work = path.join(out, 'work'), marker = path.join(work, '.aclivery-work');
+  if (fs.existsSync(work) && !fs.existsSync(marker) && fs.readdirSync(work).length) {
+    throw new UsageError(`${work} exists and was not made by apply. Pass another --out (output of an old build script can simply be deleted).`);
+  }
+  fs.rmSync(work, { recursive: true, force: true });
+  fs.mkdirSync(path.join(work, 'prep'), { recursive: true });
+  fs.writeFileSync(marker, 'made by aclivery apply; rebuilt on every run\n');
+  for (const w of warnings) console.log(`warning: ${w}`);
+
+  // Assets: prepared copies go to work/prep, the rest are used where they are.
+  const assetFile = {};
+  for (const [aName, a0] of Object.entries(design.assets ?? {})) {
+    const a = typeof a0 === 'string' ? { file: a0 } : a0, src = path.resolve(root, a.file);
+    if (!a.prep) { assetFile[aName] = src; continue; }
+    const dst = path.join(work, 'prep', `${aName}.png`), args = ['prep', src, '--out', dst];
+    if (a.prep.keyBg) args.push('--key-bg');
+    if (a.prep.tint) args.push('--tint', a.prep.tint);
+    if (a.prep.trim) args.push('--trim');
+    if (a.prep.size) args.push('--size', String(a.prep.size));
+    await quiet(() => logo(args));
+    assetFile[aName] = dst;
+  }
+  const colour = (v) => colourOf(v, design.colors);
+  const transparent = [];
+
+  for (const [role, t] of Object.entries(design.textures)) {
+    if (t.size && (`${pack.profile.textures[role].width}x${pack.profile.textures[role].height}` !== t.size)) await quiet(() => car(['size', design.car, role, t.size]));
+    const tex = loadPack(design.car).profile.textures[role];
+    const target = path.join(work, `${path.parse(tex.file).name}.png`);
+    if (t.fill === 'transparent') transparent.push(path.parse(tex.file).name);
+    let started = false;
+    if (t.base) {
+      // Start from an existing texture (for example the stock one, to keep the stickers the model already uses).
+      const src = path.resolve(root, t.base);
+      if (/\.dds$/i.test(src)) {
+        const s = await decodeTexture(fs.readFileSync(src), 4096);
+        if (!s) throw new UsageError(`could not decode ${t.base} (try: aclivery validate dds ${t.base})`);
+        await sharp(s.data, { raw: { width: s.w, height: s.h, channels: 4 } }).png().toFile(target);
+      } else fs.copyFileSync(src, target);
+      started = true;
+    }
+    const canvas = () => { const a = started ? ['--base', target] : ['--fill', t.fill === 'transparent' ? 'transparent' : colour(t.fill ?? '#ffffff')]; started = true; return a; };
+    const place = async (where, fn, args) => {
+      try { await quiet(() => fn(args)); } catch (e) { throw e instanceof UsageError ? new UsageError(`${where}: ${e.message}`) : e; }
+    };
+    const textArgs = (o) => {
+      const a = ['--text', o.text];
+      if (o.ink) a.push('--ink', colour(o.ink));
+      if (o.outline) a.push('--outline', colour(o.outline));
+      if (o.font) a.push('--font', o.font);
+      if (o.spacing !== undefined) a.push('--spacing', String(o.spacing));
+      if (o.bold) a.push('--bold');
+      if (o.italic) a.push('--italic');
+      return a;
+    };
+    for (const { e, i } of drawOrder(t.elements)) {
+      if (e.pattern) {
+        const color = colour(e.color ?? DEFAULTS[e.pattern].color), opacity = e.opacity ?? DEFAULTS[e.pattern].opacity;
+        fs.mkdirSync(path.join(work, 'pattern'), { recursive: true });
+        for (const name of panelsOf(e, pack.profile, role)) {
+          const pn = pack.profile.panels[role][name], [wm, hm] = uprightM(pn);
+          const pxPerM = Math.min(tex.width / pn.metresPerUv[0], 4096 / Math.max(wm, hm));
+          const img = await renderPattern(e.pattern, { widthM: wm, heightM: hm, pxPerM, seed: patternSeed(e, name), density: e.density ?? DEFAULT_DENSITY, color });
+          const png = path.join(work, 'pattern', `${role}-${i}-${name}.png`);
+          fs.writeFileSync(png, img.png);
+          // Always --under: decoration fills the whole panel box and must not stop logos from being placed on it.
+          await place(`${role}.elements[${i}] (${e.pattern} on ${name})`, decal, [design.car, '--texture', role, '--panel', name, '--out', target, ...canvas(), '--image', png, '--at', '0,0,1,1', '--under', '--opacity', String(opacity), '--label', `${e.pattern} ${name}`]);
+        }
+        continue;
+      }
+      const where = `${role}.elements[${i}] (${e.panel} ${e.image ?? e.text ?? e.color})`;
+      const common = ['--texture', role, '--panel', e.panel, '--out', target];
+      const extra = [];
+      if (e.at) extra.push('--at', e.at.join(','));
+      if (e.opacity !== undefined) extra.push('--opacity', String(e.opacity));
+      if (e.rotate) extra.push('--rotate', String(e.rotate));
+      if (e.label) extra.push('--label', e.label);
+      if (e.overlap) extra.push('--overlap');
+      if (layerOf(e) === 'tone') extra.push('--under');
+      if (e.text !== undefined) await place(where, text, [design.car, ...common, ...canvas(), ...extra, ...textArgs(e)]);
+      else if (e.image !== undefined) await place(where, decal, [design.car, ...common, ...canvas(), ...extra, '--image', assetFile[e.image], '--label', e.label ?? e.image]);
+      else await place(where, decal, [design.car, ...common, ...canvas(), ...extra, '--color', colour(e.color)]);
+      for (const [j, l] of (e.lines ?? []).entries()) {
+        const [x, y, w, h] = e.at ?? [0, 0, 1, 1];
+        const at = [x + l.at[0] * w, y + l.at[1] * h, l.at[2] * w, l.at[3] * h].map(fmt).join(',');
+        await place(`${where} line ${j}`, text, [design.car, ...common, '--base', target, '--at', at, '--overlap', ...textArgs(l)]);
+      }
+    }
+    // A starting picture with see-through parts (stickers on a cut-out sheet) must export with alpha (DXT5).
+    if (t.base && (await sharp(target).stats()).channels[3]?.min < 255) transparent.push(path.parse(tex.file).name);
+    const meta = await sharp(target).metadata();
+    console.log(`${role}: ${t.elements.length} element(s) -> ${target} (${meta.width}x${meta.height})`);
+  }
+
+  if (!flags['no-render']) {
+    const sheet = path.join(out, 'sheet.png');
+    await quiet(() => render([design.car, '--skin', work, '--out', sheet]));
+    console.log(`sheet: ${sheet}`);
+    if (design.brief) {
+      try {
+        const cmp = path.join(out, 'compare.png');
+        await quiet(() => compare([design.car, '--skin', work, '--brief', design.brief, '--out', cmp]));
+        console.log(`compare: ${cmp} (left = reference, right = ours)`);
+      } catch (e) { console.log(`compare skipped: ${e.message.split('\n')[0]}`); }
+    }
+  }
+
+  if (flags.export) {
+    const pkg = path.join(out, 'pkg');
+    fs.rmSync(pkg, { recursive: true, force: true });
+    fs.mkdirSync(pkg, { recursive: true });
+    for (const f of fs.readdirSync(work)) if (/\.png$/i.test(f)) fs.copyFileSync(path.join(work, f), path.join(pkg, f));
+    const previewDir = path.join(out, 'preview_src');
+    await quiet(() => render([design.car, '--skin', work, '--views', 'front-right', '--each', '--size', '1022x575', '--out', previewDir]));
+    await sharp(path.join(previewDir, 'front-right.png')).jpeg({ quality: 92 }).toFile(path.join(pkg, 'preview.jpg'));
+    fs.writeFileSync(path.join(pkg, 'ui_skin.json'), JSON.stringify(design.skin ?? { skinname: name }, null, 1));
+    const args = [pkg, '--car', design.car, '--name', name, '--out', path.join(out, 'dist')];
+    if (transparent.length) args.push('--alpha', transparent.join(','));
+    return exportSkin(args);
+  }
+  return 0;
+}

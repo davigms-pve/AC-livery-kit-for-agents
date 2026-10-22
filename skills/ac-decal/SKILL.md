@@ -43,4 +43,5 @@ aclivery car size <car> door_plates 2048x640
   reuse another car's numbers.
 - A small texture's real size can differ from what the model embeds. Record it once with `car size` (from the template
   or a working skin); the decal command refuses a base with the wrong aspect ratio.
+- `--under` marks quiet background art (tonal ink): logos may sit on it, so the overlap guard ignores it. `aclivery apply` does this for `"layer": "tone"`.
 - Use `--color` to paint a whole panel a solid colour (mirrors, wing endplates).

@@ -23,6 +23,8 @@ Reading a row: `left_rear  left  rot=0  vis=0.980  rect=[0.304 0.638 0.308 0.359
 - `side`: from the panel name. `right` panels are the car's right.
 - `rot`: degrees the image must be turned so it reads upright on the car. `aclivery decal` applies it for you.
 - `vis`: share of the panel visible from outside (0..1). Below ~0.3 it is mostly hidden; do not put sponsors there.
+  High `vis` does not mean the right place: a roof-edge or window strip can read 0.84. Check `centroid3d` height (doors sit around 0.5-0.8 m)
+  and probe with `render --probe` before placing anything that matters.
 - `rect`: `[u v w h]` in the texture, fractions, `v` from the top.
 - Names: `left_*`, `right_*`, `centre_*`; `front`, `mid`, `rear`, `tail`, `nose`; `_upper`/`_lower` and numbers
   for sub-panels. Do not trust a name alone: check with `--probe` in `ac-render` when unsure.

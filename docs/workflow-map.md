@@ -14,10 +14,10 @@ Legend: **built** = exists and was run; **partial** = works with limits; **gap**
 | 1 | Frame the ask | `ac-intake` | the user's request | `brief init` | a project (brief) | title and car recorded |
 | 2 | Know the car | `ac-car-prep` | the car's `.kn5` (not CSP-encrypted); ideally a `skins/` folder | `car prep`, `car info`, `car notes` | a car pack (`.aclivery/cars/<id>/`) | `car info` shows the pack and the body texture |
 | 3 | Gather references | `ac-intake` | photos or a description | `brief add references` (with view per photo) | references in the brief | each reference has a verified view |
-| 4 | **Analyse** | `ac-analyze` | references | `brief set analysis` | layers: base, large graphics, **subtle tonal art**, accents, logos, text, plates, overlap rules | `brief show` stops asking for analysis; every subtle layer has an element |
+| 4 | **Analyse** | `ac-analyze` | references | `brief set analysis` | layers (base, large graphics, **subtle tonal art**, accents, logos, text, plates, overlap rules), each with `confidence` and `evidence`; brands read by shape are confirmed with the user | `brief show` stops asking; no low-confidence layer is left; every subtle layer has an element |
 | 5 | Get assets | `ac-logos` | the analysis (which assets are needed) | `logo fetch` (asks first), `logo inspect`, `logo prep` | clean logos in `assets/logos` | each logo element has a good file, or is marked "no asset" with a plan |
 | 6 | Map the car | `ac-panels` | car pack | `render --regions`, `panel regions/list/get/textures`, `render --probe` | a panel (and texture) for each element | every element has a panel |
-| 7 | Build | `ac-decal` | assets, panels | `decal`, `text` (one element per call; `--overlap` only if the design shows it) | texture PNG(s) in a work folder | all elements placed |
+| 7 | Build | `ac-apply` (or `ac-decal` by hand) | assets, panels | `apply design.json` (checks, layers, rebuilds); or `decal`, `text` one element per call (`--overlap` only if the design shows it) | texture PNG(s) in a work folder | all elements placed |
 | 8 | Look and compare | `ac-render` | a work folder | `render`, `compare` | contact sheet, reference-vs-render sheet | the biggest differences are named |
 | 9 | Refine | `ac-livery` | the differences | steps 6-8 again | better textures | the user accepts, or time is up |
 | 10 | Ship | `ac-skin-export` | final PNGs, `ui_skin.json` | `export`, `validate skin` | skin folder and zip | validation passes |
@@ -59,6 +59,8 @@ state of the conversation is unclear.
 | `brief init/show/set/add/list` | project memory and the next step | JSON values | `.aclivery/projects/<slug>/brief.json` | local to the machine |
 | `car prep/info/size/notes` | one-time car pack; real sizes; per-car notes | kn5, skins, PSD | pack, notes | encrypted models refused |
 | `panel textures/regions/list/get` | find the right panel | car pack | short rows | v-from-top rects; bounding boxes |
+| `apply` pattern elements | generated placeholder art: ink-lines (quiet tonal art), splatter, brush; `--check` warns when not discreet | `{"pattern": ...}` in the design | PNG layers under the logos | placeholders, not the real artwork |
+| `apply` | a whole skin from one `design.json`: assets, layer order, sheet, comparison, export | design file | work PNGs, sheet, zip | the design must name panels; art quality is up to the design |
 | `decal` | image or solid colour on a panel, upright | panel, image/colour | texture PNG, placements sidecar | overlap guard; curvature warps art |
 | `text` | names, numbers, lettering | text, panel | texture PNG | installed fonts only |
 | `logo fetch/inspect/prep` | get and clean logos | https URL (consent) | `assets/logos` | trademarks stay local |
@@ -70,8 +72,8 @@ state of the conversation is unclear.
 ## What is built, partial, gap
 
 - **Built:** everything in the tables above.
-- **Partial:** multi-texture designs (works texture by texture by hand), reference comparison (a person or model judges), curved panels (warp).
-- **Gap:** a single design spec that drives the whole skin (`design.json` + `apply`), tonal-art generation or photo-to-texture projection, a 2D-only path,
+- **Partial:** multi-texture designs (`apply` builds several textures from one file; the art for them is still thin), reference comparison (a person or model judges), curved panels (warp).
+- **Gap:** tonal-art generation or photo-to-texture projection, a 2D-only path,
   automatic reference-view checking, plate/sticker layouts read from the PSD, in-game verification support.
   See `docs/TODO.md`.
 

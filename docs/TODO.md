@@ -1,7 +1,7 @@
 # TODO and resume map
 
 The single place to find what is done, what is next, and the context needed to pick the work up cold (by a person,
-a fresh agent session, or a local model). Update it when work lands. Last updated 2026-10-21.
+a fresh agent session, or a local model). Update it when work lands. Last updated 2026-10-21 (C1 built).
 
 Legend: `[x]` done and verified by a run, `[~]` done but only partly verified, `[ ]` not started. IDs are stable;
 refer to them in commits and the brief.
@@ -11,7 +11,7 @@ refer to them in commits and the brief.
 - **Milestone:** M1 = a small cloud model (Haiku) does the use case well enough from the repo alone (`docs/milestones.md`, run with `eval/haiku-run.md`,
   judged with `eval/rubric.md`). **Hermes trials are parked** until M1 passes (owner's decision, 2026-10-21).
 - **Order of things, requirements and tools:** `docs/workflow-map.md`. **Story and reasoning of the first session:** `docs/session-log/2026-10-21.md`.
-- **Next session starts with:** the subtle-art decision (B2/B16/B17/B18), then the design spec (C1), then an M1 run.
+- **Next session starts with:** the owner reviews the B17 placeholder art and the analysis-confidence step, then an M1 rerun (hide other briefs first; see `eval/runs/2026-10-21-haiku-1.md`). Send the B18 ask (original art) in parallel; B12/B15 still open. The design spec (C1, `aclivery apply`) is built.
 
 - **What this is:** an agent layer for Assetto Corsa livery work. A few `aclivery` commands (deterministic code) plus
   skills (what a model reads). Engine: liverykit pinned at `f5c56b8`, only touched in `src/engine.mjs`.
@@ -54,7 +54,7 @@ refer to them in commits and the brief.
 
 Why the first pass fell short: placement by guess, signature art missing, other textures skipped, no loop against the references.
 
-- [ ] **B1 Multi-texture design flow.** One design drives body, door plates, windshield banner, roof/decal textures together.
+- [~] **B1 Multi-texture design flow.** One design drives body, door plates and the windshield banner (`HR_Generic`, with `"base"`): done in draft 3 (`examples/rss-p92-thiele71/design.json`). Not yet: rear window banner (texture unknown), roof/decal textures, the pillar name (panel unknown).
 - [ ] **B2 Signature art source.** Ink line art, cyan splatter and brush strokes, the big claw. Options: the user's original design files
   (ask), vectorising from photos, an image-generation arm. Decision needed (see section 5).
 - [ ] **B3 Better logos.** SVG or press-kit sources; the claw as a separate asset; correct colour variants. Reference-quality checks.
@@ -92,19 +92,30 @@ artwork). Treat it as a required layer, not a missing asset. Logos must not over
 - [ ] **B16 Photo-to-texture projection.** Our renderer knows the camera and the UVs. Project a reference photo (a known view) back onto the UV atlas to recover
   *visible* regions of the art (luminance/colour deltas against the white body) as a texture layer. Hard parts: camera registration (the photos are arbitrary
   angles, lit renders, perspective), occlusion, lighting removal. Promising for tonal art. Research spike first.
-- [ ] **B17 Tonal-art placeholder generator.** A deterministic generator of discreet grey ink motifs (feather/vine/rose-like strokes) scattered per panel with
-  density and tint parameters, used when no original art exists. Must look discreet, not loud, and keep away from logos (overlap rules).
+- [x] **B17 Tonal-art placeholder generator.** `pattern` elements in `apply` (`src/lib/patterns.mjs`): ink-lines (vines, feathers), splatter, brush; deterministic by seed,
+  scaled in metres so motifs match across panels, always under the logos, `--check` warns when ink-lines would not be discreet (stroke contrast, body coverage).
+  Verified: unit tests (determinism, coverage estimate vs pixels, panels only, logos on top) and a render on the real P92 (faint ink on the doors and body, logo over it). Not verified: that it
+  reads as "the" livery's art to the owner (it is a generic placeholder) or that the discreet thresholds (`DISCREET` in patterns.mjs) match the owner's eye.
+- [x] **B23 Analysis confidence.** Each analysis layer carries `confidence` and `evidence` (and `brand`/`part` for marks); `brief show` makes the agent rate them, asks the user about `low`
+  layers and confirms `medium` brand reads. Nothing here can see images: it only forces the structure and turns doubt into a grounded question.
+- [~] **Staged draft 3 (2026-10-21).** `examples/rss-p92-thiele71/design.json`; build `bash examples/rss-p92-thiele71/build.sh` (output in `assets/demo/thiele71/`) or `aclivery apply ... --export` (`assets/builds/thiele71-draft-3/`). Has: leaves, vines, cracks, cyan blots,
+  cyan solids incl. splitter/diffuser edges, claw and lockup on doors/hood/roof (placeholder claw), DELS cards, lower-door DELS, POTTSPEED on the sills, windshield banner with the stock markings kept. Verified: builds, validates, DDS OK. Not verified in the game.
+  Open: rear bumper sponsors (panel maps wrapping: needs a probe), nose lockup and PORSCHE bumper wordmark, T. THIELE pillar panel, wing top text, rear window banner, black sill band, the real claw and lockup art (B2/B18), roses, creature art on wing tips.
+- [ ] **B24 Number and lettering styles.** Made-up number styles: match from a short list of free fonts tagged by style (italic, condensed, brush, stencil) via `text --font`, rather than freehand redrawing.
+  Unverified first: whether the renderer on Windows can use a font file that is not installed (else convert text to paths). Bundling fonts needs the owner's yes, a licence check and a NOTICE line.
+- [ ] **B25 Free art sources.** Optional later: CC0 motif/shape libraries (consent per download, licence note per file). Logos stay local, personal use, consent only. Procedural patterns (B17) cover tonal art without downloads.
+- [ ] **B26 Zoom on a reference.** A crop/zoom for `compare` so small models can read detail (font of the number, claw shape). Only if run 2 shows details being misread.
 - [ ] **B18 Ask for the originals first.** The team that built the livery (GT7 livery editor) may still have the decal files (SVG/PNG): the single best fix.
 - [x] **B19 Analysis step in the flow** (`ac-analyze`; `brief show` insists on it and on an element for every subtle layer).
 - [x] **B20 Overlap guard** (`decal`/`text` refuse covering placed art unless `--overlap`).
-- [ ] **B21 Layer order**: tonal art is the lowest layer, logos above; `apply` (C1) should enforce draw order from the design spec.
+- [x] **B21 Layer order**: `apply` draws `tone` (quiet art, `decal --under`), `paint`, `logo`, `text` in that order whatever the file order. Tested with synthetic cars.
 
 Process lessons from pass 2:
 
 - [ ] **B12 Reference view labels are easy to get wrong** (I mislabelled two photos in the first comparison; the side-by-side made
   it obvious). Add a check: for each reference, render the candidate view and show them together before trusting the label; or let
   the model propose the view and the user confirm.
-- [ ] **B22 First Haiku run must be valid:** the run prompt (`eval/haiku-run.md`) now allows exactly the docs the skills name; re-check that no skill points at anything the run forbids.
+- [ ] **B22 First Haiku run must be valid** (`examples/` and `eval/` are forbidden to the model, so `skills/ac-apply` and `apply --help` carry generic placeholder examples only: keep the Thiele solution out of anything the model may read. Open: `skills/ac-decal` still shows a "T. THIELE" `--at` line from before C1; it is a placement hint, not a panel, but review it before the run): the run prompt (`eval/haiku-run.md`) now allows exactly the docs the skills name; re-check that no skill points at anything the run forbids.
 - [ ] **B13 Plate/sticker layout from the modder's PSD** (card positions) should be read automatically into the car pack
   (`car prep --psd Door_Plates.psd`), not typed into the build script as fractions.
 - [x] **B14 Size overrides persist across `car prep`** (`car size`).
@@ -112,8 +123,7 @@ Process lessons from pass 2:
 
 ## 4. Generalise (different liveries, asks, vehicles)
 
-- [ ] **C1 Declarative design spec. (Recommended first optimisation step.)** `examples/.../build.sh` is already a design spec written as ~30 shell calls; a local model editing one JSON and running one command attacks the original failure (long tool chains) and is also the generalisation path. A `design.json` (elements, panels or roles, assets, colours) and `aclivery apply design.json`
-  that builds the whole skin deterministically. The single biggest win for small models: one JSON, one command.
+- [x] **C1 Declarative design spec.** `aclivery apply design.json [--check] [--no-render] [--export]` (`src/commands/apply.mjs`, skill `ac-apply`): assets prepared, every element drawn in layer order, contact sheet, optional comparison and export. The file is validated first and every problem listed at once; unknown keys are errors. Verified: `examples/rss-p92-thiele71/design.json` rebuilds the pass-2 skin byte-identical to the old `build.sh` (both textures), and 3 new tests cover validation, layers, cards and overlap errors. Not yet tried by a model: that is the M1 run. Still open under it: panels by role (C3), reading card positions from the PSD (B13).
 - [ ] **C2 Car adapters.** Any car via `car prep`; auto-generate the region map (cluster by 3D position and UV: front, hood, doors,
   roof, rear, wing, mirrors) instead of hand-drawing it; label unknown panels by probe renders (VLM or human).
 - [ ] **C3 Reusable designs across cars.** Panels addressed by role (`hood`, `left_door`) so one design maps onto another car;
@@ -142,6 +152,7 @@ Note on state: the `thiele71` brief (in `.aclivery/projects/`, not in git) was r
 - OK to contact liverykit's author about collaboration? (C11) Not done; the user's call.
 - Hermes trial: parked until the Haiku milestone M1 passes. (B10, `docs/milestones.md`)
 - Can the user (or the brother) load a skin and send a screenshot? (B7)
+- From the 15-photo analysis simulation (`docs/research/reference-views.md`): is "ULTRA" part of the can lockup? is the dotted "III" on the wing endplate the claw? all answered 2026-10-21 (see the doc; tyres are probably stock, not verified in the game). Still to run: the canonical-views-only test (does a subset of views give the same inventory?).
 
 ## 6. Decisions made so far
 

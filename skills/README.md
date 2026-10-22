@@ -10,6 +10,7 @@ Load only the one you need; each is short. The full map of order, requirements a
 | 3 | `ac-logos` | you need logo files (asks before downloading) |
 | 4 | `ac-panels` | you must choose which panel an element goes on |
 | 5 | `ac-decal` | placing images, solid colours and text on panels (door plates and other small textures too) |
+| 5b | `ac-apply` | you know the panels and have the assets: put every element in one `design.json` and build with one command |
 | 6 | `ac-render` | looking at the result and comparing with the references |
 | 7 | `ac-skin-export` | shipping: validate, DDS, zip |
 | all | `ac-livery` | the overall workflow and the rules; start here if unsure |

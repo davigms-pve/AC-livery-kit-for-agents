@@ -30,10 +30,11 @@ Give `--out` paths you can find again; without `--out`, renders go to `.aclivery
 4. **Find the panels.** `aclivery panel regions <id>` then `aclivery panel list <id> --region <name>`.
    Skill: `ac-panels`. Prefer panels with high `vis` (visible from outside) and the right `side`.
 5. **Place things.** One `aclivery decal` (or `aclivery text` for names and numbers) call per element, each adding to the same texture PNG.
-   Skill: `ac-decal`.
+   Skill: `ac-decal`. Once you know the panels, prefer ONE design file and `aclivery apply design.json` (skill `ac-apply`): it checks everything first, orders the layers and rebuilds the skin from scratch.
 6. **Look.** `aclivery render <id> --skin <folder>` (one image, several views), and `aclivery compare <id> --skin <folder>
    --brief <slug>` (reference next to render). Name the biggest differences and fix those. Repeat 5-6. Skill: `ac-render`.
-7. **Ship.** `aclivery export` (it validates every DDS), then `aclivery validate skin dist/<Name>`. Skill: `ac-skin-export`.
+7. **Ship.** Always finish with a packaged skin, even a rough one, unless the user said not to: `aclivery apply design.json --export`
+   (or `aclivery export`), then `aclivery validate skin <dist folder>/<Name>`. Skill: `ac-skin-export`. A skin that was never packaged is not finished.
 
 ## Rules
 
@@ -41,7 +42,7 @@ Give `--out` paths you can find again; without `--out`, renders go to `.aclivery
 - A skin can override several textures (body `EXT_Main`, door plates, decals ...). The body is the default;
   pass `--texture <role>` for others (`aclivery panel textures <id>` lists them).
 - Logos never overlap each other unless a reference or the user shows it. `decal`/`text` refuse to cover placed art;
-  `--overlap` is only for a real exception (text on its plate card). The quiet tonal art is the lowest layer.
+  `--overlap` is only for a real exception (text on its plate card). The quiet tonal art is the lowest layer; with no original file, use a `pattern` element (skill `ac-apply`) as the placeholder.
 - If a result looks wrong, probe before guessing: `aclivery render <id> --skin <dir> --probe <panel>` paints that
   panel magenta so you see where it is.
 - If you cannot view images, do not claim a placement is right from command output alone. Probe the panel, check

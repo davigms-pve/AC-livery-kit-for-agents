@@ -44,3 +44,20 @@ Regions (hand-drawn boxes by the user, aligned with the profile): 1 front_bumper
 - Loading any exported skin in the game (the exported `Door_Plates.dds` at 2048x640 in particular).
 - `ui_skin.json` key names; sizes other than the body texture.
 - Panel for the rear-window pillar name strip; the side skirts; the windshield banner texture.
+
+## Windshield banner, stock markings, and more panels (verified 2026-10-21 unless marked)
+
+- **The windshield banner is the top band of `HR_Generic.dds`** (role `hr_generic`, panel `whole`). Found by listing the model's materials: `EXT_Banner` (mesh `GEO_BANNER_EXT`, 1.27 x about 0.33 m)
+  uses `HR_Generic.dds`; confirmed by painting five colour bands on the texture and rendering (the top band showed on the windshield). Its UV area is u 0.007-0.993, v 0.018-0.226 from the
+  top: in a `whole`-panel box that is `at [0, 0, 1, 0.212]`. The modder's template is **512x512** (the model embeds 380x380): `aclivery car size rss_gtm_protech_p92_f6 hr_generic 512x512`.
+- The rest of `HR_Generic` is the stock sticker sheet used by body meshes (`GEO_EXT_HR`, arrows): an up arrow, orange arrows, a blue electrical-hazard triangle, a red-ringed "E"
+  (extinguisher) and a yellow band along the bottom. Start that texture from the stock file (`"base": ...` in a design) so these stay. The yellow bottom band (v 0.655-1) colours the splitter and diffuser edges:
+  painting it cyan gave the cyan splitter and diffuser edges seen in the references.
+- `EXTERIOR_DECALS` and `EXT_Roof_2` (in the modder's PSD pack) are **not referenced by any material of this kn5** (all 126 materials checked), so they cannot be used here.
+- `Door_Plates` aside, other textures with stickers: `HR_Generic_2` (also used by rear-camera parts), `Le_God_Grille` (128x32 grille), `INTERIOR_DECALS`. Not yet explored.
+- Left side as seen in a labelled render: `left_front` = front fender; `left_mid` = the door; `left_rear` = the sill AND the whole rear quarter (one long panel; the sill is its lower strip, about the
+  front 55% of its width); `left_mid_upper_2` = the strip along the roof edge over the side windows; `left_tail_upper_3` = the wing uprights; `centre_mid` = roof. The black C-pillar patch where the references
+  show "T. THIELE" is **not** on any of these panels (the window frame is open): where it lives is still unknown.
+- Rear: `centre_tail_upper` is the whole rear bumper strip, rotation 270 and wrapping the corners (upright about 3.1 x 0.6 m, so `at` x runs across the whole bumper and its ends curve round the sides):
+  a first placement of the sponsors there came out bunched up and clipped. `centre_tail_upper_3` is the rear deck lid (about 1.9 x 0.6 m).
+- Not verified: how any of this looks in the game.

@@ -3,6 +3,7 @@ import path from 'node:path';
 import sharp from 'sharp';
 import { parseArgs, UsageError } from '../lib/args.mjs';
 import { home } from '../lib/paths.mjs';
+import { quiet } from '../lib/quiet.mjs';
 import { run as render } from './render.mjs';
 
 export const help = `aclivery compare <car> --skin <dir> --ref a.jpg,b.jpg --views front-right,left   [--out file.png]
@@ -14,10 +15,6 @@ aclivery compare <car> --skin <dir> --brief <slug>        use the references rec
            In the brief, record it per reference: aclivery brief add <slug> references '{"file":"photo.jpg","view":"right"}'.
   Rows are matched by order. A view is a fixed camera, so expect similar, not identical, framing.`;
 
-const quiet = async (fn) => {
-  const log = console.log; console.log = () => {};
-  try { return await fn(); } finally { console.log = log; }
-};
 
 export async function run(argv) {
   const { flags, positional } = parseArgs(argv);

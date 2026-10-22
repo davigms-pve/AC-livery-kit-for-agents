@@ -20,7 +20,7 @@ How M1 is run and judged:
 What has to exist before a meaningful M1 run (from `docs/TODO.md`):
 
 1. The tonal/ink art problem has an answer (an asset source or a placeholder generator), otherwise the result cannot resemble the target.
-2. A single design spec and `aclivery apply` (C1) or a skill flow short enough for Haiku to complete reliably.
+2. ~~A single design spec and `aclivery apply` (C1)~~ built 2026-10-21 (`skills/ac-apply`); whether Haiku completes it reliably is what the run tests.
 3. Reference-view checking (B12) and sensible default sizes (B15).
 4. The analysis step and overlap guard (built).
 

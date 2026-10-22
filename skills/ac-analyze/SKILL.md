@@ -25,11 +25,12 @@ aclivery brief set <slug> analysis '{"summary":"...","layers":[...],"overlapRule
    mimicking the artwork of a can). They are low-contrast, so easy to miss, and they are often *the* identity of the
    livery. Record where they appear, their colour (a slightly darker tint of the base) and rough density. **Never drop
    them for lack of an asset.** Plan a placeholder (a procedural or traced pattern) or ask for the original file.
-4. **Accents**: small bold colours (mirrors, endplates, stripes, splatters). Which parts, which colour.
-5. **Logos and wordmarks**: which brand, which variant (colour, mono), where, size, what they sit next to.
-6. **Text and numbers**: names, number, plate lettering; font style; where.
-7. **Plates and stickers**: door plates, windshield banner, other separate textures.
-8. **Order and overlap**: what sits on top of what in the photos. Logos do not overlap each other unless a photo
+4. **Functional race-car markings**: tiny stickers that copy real scrutineering features: TOW arrows, N (neutral) and E (fire extinguisher) pull indicators, battery cut-off, fuel and jack points, sponsor-free number panels. They are small and easy to take for decoration or to skip; look for them near the windshield base, bumpers, and rear. If you cannot read one, record it as low confidence and ask. Kind: `marking`.
+5. **Accents**: small bold colours (mirrors, endplates, stripes, splatters). Which parts, which colour.
+6. **Logos and wordmarks**: which brand, which variant (colour, mono), where, size, what they sit next to.
+7. **Text and numbers**: names, number, plate lettering; font style; where.
+8. **Plates and stickers**: door plates, windshield banner, other separate textures.
+9. **Order and overlap**: what sits on top of what in the photos. Logos do not overlap each other unless a photo
    shows it. Write the exceptions in `overlapRules`; everything else is "keep apart".
 
 ## Method
@@ -38,8 +39,20 @@ aclivery brief set <slug> analysis '{"summary":"...","layers":[...],"overlapRule
 - Use more than one photo per element: size and colour are easier to judge from a straight side or front view.
 - Ask yourself what you would draw first if you could only keep three things. Those are the layers that carry the look.
 - Write the analysis into the brief as the JSON above, one object per layer:
-  `{"kind":"tonal-art","what":"grey ink feathers","where":"all body panels","tone":"subtle","notes":"slightly darker than body, denser near the doors"}`.
-  Kinds: `base large-graphic tonal-art accent logo text plate`. Tone: `subtle` or `bold`.
+  `{"kind":"tonal-art","what":"grey ink feathers","where":"all body panels","tone":"subtle","confidence":"medium","evidence":"a.jpg left, door and rear quarter","notes":"slightly darker than body, denser near the doors"}`.
+  Kinds: `base large-graphic tonal-art accent marking logo text plate`. Tone: `subtle` or `bold`.
+- **Every layer needs `confidence` and `evidence`** (`brief show` will not move on without them):
+  `high` = clearly seen and identified in a photo; `medium` = seen but small or blurred, or identified by shape or context only;
+  `low` = a guess. `evidence` names the reference photo and view (and where in it) that shows the layer. If you cannot name a photo, the
+  confidence is not high.
+- **Marks you recognise by shape.** Three slanted bars on a Monster Energy car are very likely the Monster claw; a lion between two bars is
+  Peugeot. Write `"brand"` and `"part"` (`wordmark`, `symbol` or `both`) and put `medium` unless a word or caption confirms it. The brief
+  then asks the user to confirm the read before anything is searched or downloaded; once confirmed, the usual "needs an image file" step finds the asset.
+  The same brand often has two parts on the car (a symbol and a wordmark): list them as two layers.
+- **Doubt is information, not failure.** A `low` layer becomes a question to the user that quotes your evidence ("I am not sure about the
+  small script near the roof (b.jpg front): what is it?"). Ask it; do not build a guess into the livery. Record the answer in the brief.
+- **Self-check before you place anything:** re-read each layer as if someone else wrote it. Could you point to the photo? Did you mix up two
+  similar marks? Did you split symbol and wordmark? Are numbers or lettering in a made-up style (note the style: italic, stencil, brush)?
 - Then turn each layer into one or more brief elements (`aclivery brief add <slug> elements ...`) with a panel target.
   `aclivery brief show <slug>` will insist that subtle layers have an element.
 

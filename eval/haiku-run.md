@@ -9,6 +9,7 @@ model `haiku`. The human prepares the inputs first. Replace the bracketed parts.
 - A fresh project: `aclivery brief init thiele71 --title "T. Thiele #71 Monster Energy Ultra" --car rss_gtm_protech_p92_f6`.
 - Reference photos and their views registered, or left for the model to register (variant B, harder).
 - Delete earlier outputs in the work folder you give the model.
+- **Hide every other project's brief** (`.aclivery/projects/`): move them out for the run and back after. `brief list` shows them, and a finished brief is the answer key (run 1 leaked this way).
 
 ## Prompt
 

@@ -1,0 +1,427 @@
+{
+ "car": "rss_gtm_protech_p92_f6",
+ "name": "Thiele71 draft 3",
+ "colors": {
+  "cyan": "#4ec4d6"
+ },
+ "assets": {
+  "monster": "assets/logos/monster.png",
+  "claw": "assets/logos/claw_placeholder.png",
+  "porsche": {
+   "file": "assets/logos/porsche.png",
+   "prep": {
+    "keyBg": true,
+    "tint": "#222222",
+    "trim": true,
+    "size": 2000
+   }
+  },
+  "gopro": {
+   "file": "assets/logos/gopro.png",
+   "prep": {
+    "tint": "#222222",
+    "trim": true
+   }
+  },
+  "motul": {
+   "file": "assets/logos/motul.png",
+   "prep": {
+    "tint": "#2a2a2a",
+    "trim": true
+   }
+  }
+ },
+ "textures": {
+  "ext_main": {
+   "fill": "#f6f6f6",
+   "elements": [
+    {
+     "pattern": "leaves",
+     "panels": [
+      "left_front",
+      "right_front",
+      "left_mid",
+      "right_mid",
+      "left_rear",
+      "right_rear",
+      "centre_front"
+     ],
+     "density": 0.7,
+     "seed": 11,
+     "color": "#80848a",
+     "opacity": 0.85
+    },
+    {
+     "pattern": "ink-lines",
+     "panels": "visible",
+     "density": 0.8,
+     "seed": 7
+    },
+    {
+     "pattern": "cracks",
+     "panels": [
+      "centre_mid",
+      "centre_front"
+     ],
+     "density": 1,
+     "seed": 5,
+     "opacity": 0.6
+    },
+    {
+     "pattern": "splatter",
+     "panels": [
+      "left_front",
+      "right_front",
+      "left_mid",
+      "right_mid",
+      "left_rear",
+      "right_rear",
+      "centre_tail_upper",
+      "centre_front"
+     ],
+     "density": 1,
+     "seed": 21
+    },
+    {
+     "panel": "left_mid_lower_2",
+     "color": "cyan"
+    },
+    {
+     "panel": "right_mid_lower_2",
+     "color": "cyan"
+    },
+    {
+     "panel": "left_tail",
+     "color": "cyan"
+    },
+    {
+     "panel": "right_tail",
+     "color": "cyan"
+    },
+    {
+     "panel": "right_mid",
+     "image": "claw",
+     "at": [
+      0.44,
+      0.1,
+      0.22,
+      0.78
+     ]
+    },
+    {
+     "panel": "right_mid",
+     "image": "monster",
+     "at": [
+      0.01,
+      0.15,
+      0.43,
+      0.6
+     ]
+    },
+    {
+     "panel": "left_mid",
+     "image": "claw",
+     "at": [
+      0.34,
+      0.1,
+      0.22,
+      0.78
+     ]
+    },
+    {
+     "panel": "left_mid",
+     "image": "monster",
+     "at": [
+      0.56,
+      0.15,
+      0.43,
+      0.6
+     ]
+    },
+    {
+     "panel": "centre_front",
+     "image": "claw",
+     "at": [
+      0.25,
+      0.08,
+      0.5,
+      0.62
+     ]
+    },
+    {
+     "panel": "centre_mid",
+     "image": "claw",
+     "at": [
+      0.3,
+      0.15,
+      0.4,
+      0.7
+     ]
+    },
+    {
+     "panel": "centre_tail",
+     "image": "porsche",
+     "at": [
+      0.05,
+      0.4,
+      0.9,
+      0.2
+     ]
+    },
+    {
+     "panel": "left_mid",
+     "text": "DELS",
+     "ink": "#222222",
+     "bold": true,
+     "at": [
+      0.8,
+      0.7,
+      0.18,
+      0.18
+     ]
+    },
+    {
+     "panel": "right_mid",
+     "text": "DELS",
+     "ink": "#222222",
+     "bold": true,
+     "at": [
+      0.02,
+      0.7,
+      0.18,
+      0.18
+     ]
+    },
+    {
+     "panel": "centre_tail_upper",
+     "image": "motul",
+     "at": [
+      0.04,
+      0.06,
+      0.22,
+      0.36
+     ]
+    },
+    {
+     "panel": "centre_tail_upper",
+     "image": "motul",
+     "at": [
+      0.76,
+      0.06,
+      0.2,
+      0.36
+     ]
+    },
+    {
+     "panel": "centre_tail_upper",
+     "image": "monster",
+     "at": [
+      0.38,
+      0.08,
+      0.24,
+      0.42
+     ]
+    },
+    {
+     "panel": "centre_tail_upper",
+     "text": "71",
+     "ink": "#d43a7a",
+     "bold": true,
+     "italic": true,
+     "at": [
+      0.66,
+      0.1,
+      0.08,
+      0.32
+     ]
+    },
+    {
+     "panel": "centre_tail_upper",
+     "image": "gopro",
+     "at": [
+      0.05,
+      0.55,
+      0.18,
+      0.3
+     ]
+    },
+    {
+     "panel": "centre_tail_upper_3",
+     "text": "PAPA'S HOUSE OF GAME",
+     "ink": "#555555",
+     "bold": true,
+     "at": [
+      0.15,
+      0.25,
+      0.7,
+      0.35
+     ]
+    },
+    {
+     "panel": "left_rear",
+     "text": "POTTSPEED",
+     "ink": "#222222",
+     "bold": true,
+     "italic": true,
+     "at": [
+      0.02,
+      0.84,
+      0.46,
+      0.12
+     ]
+    },
+    {
+     "panel": "right_rear",
+     "text": "POTTSPEED",
+     "ink": "#222222",
+     "bold": true,
+     "italic": true,
+     "at": [
+      0.52,
+      0.84,
+      0.46,
+      0.12
+     ]
+    }
+   ]
+  },
+  "door_plates": {
+   "fill": "transparent",
+   "size": "2048x640",
+   "elements": [
+    {
+     "panel": "whole",
+     "color": "#ffffff",
+     "at": [
+      0.015,
+      0.105,
+      0.203,
+      0.682
+     ],
+     "lines": [
+      {
+       "text": "DELS",
+       "ink": "#111111",
+       "bold": true,
+       "at": [
+        0.12,
+        0.06,
+        0.76,
+        0.26
+       ]
+      },
+      {
+       "text": "71",
+       "ink": "#111111",
+       "bold": true,
+       "italic": true,
+       "at": [
+        0.12,
+        0.36,
+        0.76,
+        0.58
+       ]
+      }
+     ]
+    },
+    {
+     "panel": "whole",
+     "color": "#ffffff",
+     "at": [
+      0.783,
+      0.105,
+      0.202,
+      0.682
+     ],
+     "lines": [
+      {
+       "text": "DELS",
+       "ink": "#111111",
+       "bold": true,
+       "at": [
+        0.12,
+        0.06,
+        0.76,
+        0.26
+       ]
+      },
+      {
+       "text": "71",
+       "ink": "#111111",
+       "bold": true,
+       "italic": true,
+       "at": [
+        0.12,
+        0.36,
+        0.76,
+        0.58
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "hr_generic": {
+   "base": "assets/stock/HR_Generic.dds",
+   "size": "512x512",
+   "elements": [
+    {
+     "panel": "whole",
+     "color": "#33363b",
+     "at": [
+      0,
+      0,
+      1,
+      0.212
+     ],
+     "overlap": true
+    },
+    {
+     "panel": "whole",
+     "text": "GRAN TURISMO",
+     "ink": "#ffffff",
+     "bold": true,
+     "italic": true,
+     "at": [
+      0.2,
+      0.03,
+      0.6,
+      0.11
+     ],
+     "overlap": true
+    },
+    {
+     "panel": "whole",
+     "text": "THE REAL DRIVING SIMULATOR",
+     "ink": "#cccccc",
+     "bold": true,
+     "at": [
+      0.3,
+      0.145,
+      0.4,
+      0.045
+     ],
+     "overlap": true
+    },
+    {
+     "panel": "whole",
+     "color": "cyan",
+     "at": [
+      0,
+      0.655,
+      1,
+      0.345
+     ],
+     "overlap": true
+    }
+   ]
+  }
+ },
+ "skin": {
+  "skinname": "T. THIELE 71 (draft 3)",
+  "drivername": "T. Thiele",
+  "country": "DEU",
+  "team": "GT-M Protech",
+  "number": "71"
+ }
+}

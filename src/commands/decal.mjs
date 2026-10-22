@@ -14,6 +14,8 @@ export const help = `aclivery decal <car> --panel <name> (--image <png> | --colo
   --color  paint the panel (or the --at box) a solid colour instead of placing an image, e.g. cyan mirrors.
   --label  a name for this placement in overlap messages (default: the image file name)
   --overlap allow this to cover art already placed (default: refused, so logos never sit on each other by accident)
+  --under  this is quiet background art (tonal ink, texture): it may sit under logos, so it skips the overlap check and is
+           not remembered by it. Everything else is placed over it.
   --fill   start from a flat colour, or "transparent" (door plates and other cut-out textures) (paints the whole texture) instead of --base.
   --size   canvas width for a NEW texture. Default: the texture's real size (e.g. 8192x2956 for the P92 body).
            Smaller is fine for quick tests; height follows the real aspect ratio, rounded to a multiple of 4.
@@ -31,7 +33,7 @@ function toUv([x, y, w, h], [uw, uh], rot) {
 }
 
 export async function run(argv) {
-  const { flags, positional } = parseArgs(argv, { bools: ['overlap'] });
+  const { flags, positional } = parseArgs(argv, { bools: ['overlap', 'under'] });
   const [carId] = positional;
   if (!carId || !flags.panel || !(flags.image || flags.color) || !flags.out) throw new UsageError(help);
   const pack = loadPack(carId);
@@ -104,7 +106,7 @@ export async function run(argv) {
   const sidecar = `${flags.out}.placements.json`;
   const placed = flags.base && fs.existsSync(sidecar) ? JSON.parse(fs.readFileSync(sidecar, 'utf8')) : [];
   const mine = [left, top, pieceInfo.width, pieceInfo.height];
-  if (!flags.overlap) {
+  if (!flags.overlap && !flags.under) {
     for (const p of placed) {
       const ix = Math.max(0, Math.min(mine[0] + mine[2], p.box[0] + p.box[2]) - Math.max(mine[0], p.box[0]));
       const iy = Math.max(0, Math.min(mine[1] + mine[3], p.box[1] + p.box[3]) - Math.max(mine[1], p.box[1]));
@@ -113,7 +115,7 @@ export async function run(argv) {
       }
     }
   }
-  placed.push({ what, panel: flags.panel, box: mine });
+  if (!flags.under) placed.push({ what, panel: flags.panel, box: mine });
 
   const out = await sharp(base, { raw: { width: W, height: H, channels: 4 } })
     .composite([{ input: pieceBuf, left, top }]).png().toBuffer();

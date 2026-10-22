@@ -22,5 +22,7 @@ aclivery logo prep <in> --out assets/logos/prepped/monster.png --key-bg --tint "
 4. A multi-colour logo loses its colours with `--tint`. Use `--tint` only for one-colour decals; otherwise just
    `--key-bg --trim`.
 5. Files live in `assets/logos/` (gitignored). Logos are trademarks of their owners: do not commit or share them.
-6. If `inspect` says the background is not flat (for example a fake checkerboard baked into the image), do not
-   try to fix it: find another source.
+6. If `inspect` says the background is not flat, do not give up on the logo yet: run `logo prep ... --key-bg --trim`, open the
+   result and look. A near-white background on a near-white body often needs no cutting at all. Place the logo if it looks
+   clean. Only when it is clearly broken (a fake checkerboard baked in, ragged edges) do you stop; then record the gap in the
+   brief, say so in the report, and ask for another source. Never drop a main sponsor silently.

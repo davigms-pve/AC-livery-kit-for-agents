@@ -26,7 +26,7 @@ export async function textImage(text, { ink = '#111111', font = 'Verdana, Arial,
 }
 
 export async function run(argv) {
-  const { flags, positional } = parseArgs(argv, { bools: ['bold', 'italic', 'overlap'] });
+  const { flags, positional } = parseArgs(argv, { bools: ['bold', 'italic', 'overlap', 'under'] });
   const [carId] = positional;
   if (!carId || !flags.text || typeof flags.text !== 'string' || !flags.panel || !flags.out) throw new UsageError(help);
   if (flags.text.length > 60) throw new UsageError('text is limited to 60 characters; place longer text in pieces');
@@ -39,6 +39,7 @@ export async function run(argv) {
     const pass = [carId, '--panel', flags.panel, '--image', tmp, '--out', flags.out];
     for (const k of ['texture', 'base', 'fill', 'size', 'at', 'rotate', 'opacity']) if (flags[k] !== undefined) pass.push(`--${k}`, String(flags[k]));
     if (flags.overlap) pass.push('--overlap');
+    if (flags.under) pass.push('--under');
     pass.push('--label', `text "${flags.text}"`);
     return await decal(pass);
   } finally { fs.rmSync(tmp, { force: true }); }

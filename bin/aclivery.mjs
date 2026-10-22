@@ -12,6 +12,7 @@ const commands = {
   compare: () => import('../src/commands/compare.mjs'),
   brief: () => import('../src/commands/brief.mjs'),
   status: () => import('../src/commands/status.mjs'),
+  apply: () => import('../src/commands/apply.mjs'),
   export: () => import('../src/commands/export.mjs'),
 };
 
@@ -26,6 +27,7 @@ const summary = `aclivery: Assetto Corsa livery helper for agents. Few commands,
   aclivery decal <car> --panel ...     place one image on a named panel, upright
   aclivery text <car> --panel ...      draw text (names, number) and place it the same way
   aclivery compare <car> --skin ...    reference photo next to our render from the same view
+  aclivery apply <design.json>         build the whole skin from one design file (assets, layers, sheet, optional export)
   aclivery validate dds|skin ...       check DDS files and skin folders before installing
   aclivery export <workDir> ...        encode textures to DDS and zip for Content Manager
 
