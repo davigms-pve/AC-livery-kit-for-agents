@@ -102,7 +102,7 @@ Regions (hand-drawn boxes by the user, aligned with the profile): 1 front_bumper
 
 - **Panels that are black paint / dark carbon in the references** (draft 3 paints them `#17181a`, the colour name "carbon" in the design): front splitter lip `centre_nose_lower`; the lower front fascia around the grille
   `centre_nose_upper_2`; the dive planes `left_nose_lower` / `right_nose_lower`; the fender-top vents `left_front_upper` / `right_front_upper` (the whole panel is about 49 x 40 cm and painting all of it made a big blotch,
-  so only a 34 x 18 cm slot, `at [0.15, 0.40, 0.70, 0.45]`, is dark); the lower rear bumper `centre_tail_upper_4`; the diffuser floor `centre_tail_lower` and its upper plate `centre_tail_upper_2`
+  so only a 34 x 18 cm slot, `at [0.15, 0.40, 0.70, 0.45]`, is dark, with six thin grey slats (`#5d6168`, 2.2% tall, pitch 6.2%, from y 0.435) running along the slot so it reads as a louvred vent, not a paint patch); the lower rear bumper `centre_tail_upper_4`; the diffuser floor `centre_tail_lower` and its upper plate `centre_tail_upper_2`
   (its end fins are `centre_tail_upper_6`, kept cyan); the wing uprights `left_tail_upper_3` / `right_tail_upper_3`; the wing underside = the left half (x 0-0.5) of `centre_tail`.
   `centre_tail_upper_5` is the rear deck lid; `centre_tail_upper_7` a small patch at the rear centre (not used).
 - **Roof `centre_mid` upright frame:** text drawn upright reads correctly for someone at the car's LEFT side looking across (its "up" is toward the car's RIGHT, x runs front to rear). A logo meant to run along the car
