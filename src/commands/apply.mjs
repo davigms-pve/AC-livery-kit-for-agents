@@ -214,6 +214,10 @@ export function validateDesign(d, profile, fileExists = (p) => fs.existsSync(p))
  */
 export function designWarnings(design, profile) {
   const out = [];
+  for (const [name, a] of Object.entries(design.assets ?? {})) {
+    const file = typeof a === 'string' ? a : a?.file;
+    if (/placeholder/i.test(String(file))) out.push(`asset "${name}" is a generated placeholder (${path.basename(String(file))}). If the real mark exists in assets/logos (aclivery logo inspect), cut it out of that file with logo prep --crop / --erase / --key-bg / --tint (skill ac-logos); if there is no real file, say so in the report.`);
+  }
   for (const [role, t] of Object.entries(design.textures)) {
     if (t.fill === 'transparent') continue;
     const fill = luma(colourOf(t.fill ?? '#ffffff', design.colors));
@@ -350,6 +354,13 @@ export function coverage(design, brief, regions) {
   return out;
 }
 
+/** A base picture at the declared size (`size`): the model embeds small copies of some textures, the design draws at the real size. Same aspect only. */
+export function scaleToSize(img, w, h, size) {
+  const m = /^(\d+)x(\d+)$/.exec(String(size ?? ''));
+  if (!m || (Number(m[1]) === w && Number(m[2]) === h) || Math.abs(Number(m[1]) / Number(m[2]) / (w / h) - 1) > 0.02) return img.png();
+  return img.resize(Number(m[1]), Number(m[2]), { kernel: 'lanczos3' }).png();
+}
+
 const slug = (s) => String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'skin';
 const fmt = (n) => Number(n.toFixed(4));
 
@@ -408,8 +419,8 @@ export async function run(argv) {
       if (/\.dds$/i.test(src)) {
         const s = await decodeTexture(fs.readFileSync(src), 4096);
         if (!s) throw new UsageError(`could not decode ${t.base} (try: aclivery validate dds ${t.base})`);
-        await sharp(s.data, { raw: { width: s.w, height: s.h, channels: 4 } }).png().toFile(target);
-      } else fs.copyFileSync(src, target);
+        await scaleToSize(sharp(s.data, { raw: { width: s.w, height: s.h, channels: 4 } }), s.w, s.h, t.size).toFile(target);
+      } else await scaleToSize(sharp(src), (await sharp(src).metadata()).width, (await sharp(src).metadata()).height, t.size).toFile(target);
       started = true;
     }
     const canvas = () => { const a = started ? ['--base', target] : ['--fill', t.fill === 'transparent' ? 'transparent' : colour(t.fill ?? '#ffffff')]; started = true; return a; };
@@ -481,8 +492,8 @@ export async function run(argv) {
   // The fix loop: a build is one round. The review names what to look at and what to fix next, so a model repeats look-fix-build a few times.
   {
     const roundFile = path.join(out, '.rounds.json');
-    let round = 1;
-    try { round = (JSON.parse(fs.readFileSync(roundFile, 'utf8')).round ?? 0) + 1; } catch { /* first round */ }
+    let round = (brief?.build?.round ?? 0) + 1;
+    if (!brief) { try { round = (JSON.parse(fs.readFileSync(roundFile, 'utf8')).round ?? 0) + 1; } catch { round = 1; } }
     fs.writeFileSync(roundFile, JSON.stringify({ round }));
     const byLayer = {};
     for (const t of Object.values(design.textures)) for (const e of t.elements) byLayer[layerOf(e)] = (byLayer[layerOf(e)] ?? 0) + 1;

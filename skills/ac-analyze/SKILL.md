@@ -35,6 +35,8 @@ aclivery brief set <slug> analysis '{"summary":"...","layers":[...],"overlapRule
 
 ## Method
 
+- **Views worth finding before you decide the layers are complete:** a straight front, a flat side, a close-up of a door, the rear, and above all a **top view** (roof, wing top and rear window show nowhere else). If the brief has none, look through the folder of photos for one. This is a suggestion from experience, not a rule: a livery may need others.
+
 - Look at each reference in turn; note which view it is (`left` means the car's left side, nose to the left of the picture).
 - Use more than one photo per element: size and colour are easier to judge from a straight side or front view.
 - Ask yourself what you would draw first if you could only keep three things. Those are the layers that carry the look.

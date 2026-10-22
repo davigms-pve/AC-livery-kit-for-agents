@@ -583,3 +583,36 @@ test('apply: the review lists analysis layers nothing answers and places a layer
   assert.equal(saved.build.round, 1); assert.equal(saved.build.missing, 2);
   assert.match(run(['brief', 'show', 'cv'], env).stdout, /built: round 1, 1 element\(s\)/);
 });
+
+test('apply: scales a small base picture up to the declared size, flags placeholder assets, and counts rounds per brief', async () => {
+  const { scaleToSize } = await import('../src/commands/apply.mjs');
+  const small = await scaleToSize(sharp({ create: { width: 20, height: 10, channels: 4, background: '#00ff00' } }), 20, 10, '80x40').toBuffer();
+  assert.deepEqual([(await sharp(small).metadata()).width, (await sharp(small).metadata()).height], [80, 40]);
+  const same = await scaleToSize(sharp({ create: { width: 20, height: 10, channels: 4, background: '#00ff00' } }), 20, 10, '20x10').toBuffer();
+  assert.equal((await sharp(same).metadata()).width, 20);
+  const other = await scaleToSize(sharp({ create: { width: 20, height: 10, channels: 4, background: '#00ff00' } }), 20, 10, '40x40').toBuffer();   // aspect differs: left alone
+  assert.equal((await sharp(other).metadata()).width, 20);
+
+  const home = tmp(); applyCar(home, 'pl');
+  const dir = tmp(), env = { ACLIVERY_HOME: home };
+  const ph = path.join(dir, 'claw_placeholder.png');
+  await sharp({ create: { width: 20, height: 20, channels: 3, background: '#888888' } }).png().toFile(ph);
+  const pdir = path.join(home, 'projects', 'pl'); fs.mkdirSync(pdir, { recursive: true });
+  fs.writeFileSync(path.join(pdir, 'brief.json'), JSON.stringify({ slug: 'pl' }));
+  const file = path.join(dir, 'd.json');
+  fs.writeFileSync(file, JSON.stringify({ car: 'pl', brief: 'pl', assets: { claw: ph }, textures: { ext_main: { elements: [{ panel: 'a', image: 'claw', at: [0.1, 0.1, 0.3, 0.3] }] } } }));
+  const r1 = run(['apply', file, '--no-render', '--out', path.join(dir, 'r1')], env);
+  assert.match(r1.stdout, /asset "claw" is a generated placeholder \(claw_placeholder\.png\)/);
+  assert.match(r1.stdout, /review, round 1:/);
+  assert.match(run(['apply', file, '--no-render', '--out', path.join(dir, 'r2')], env).stdout, /review, round 2:/);   // another --out, same brief: still counts up
+});
+
+test('car stock never overwrites an existing file without --force', () => {
+  const home = tmp(); fakeCar(home, 'cs2');
+  const out = path.join(home, 'keep.dds'); fs.writeFileSync(out, 'precious');
+  const env = { ACLIVERY_HOME: home };
+  const r = run(['car', 'stock', 'cs2', 'ext_main', '--out', out], env);
+  assert.equal(r.status, 0, r.stderr);
+  assert.match(r.stdout, /kept .*already exists/);
+  assert.equal(fs.readFileSync(out, 'utf8'), 'precious');
+});
