@@ -16,25 +16,17 @@ Run `aclivery --help` for the command list. Every command prints short output; r
 Commands work from any folder: car packs, logos and defaults are found relative to the repo, not the current folder.
 Give `--out` paths you can find again; without `--out`, renders go to `.aclivery/renders/` and exports to `./dist/`.
 
-## Steps
+## Steps (seven stages: the full table is in `docs/agent-flow.md`)
 
-0. **Start with `ac-intake`** if you do not yet know what the user has and wants: `aclivery status`, then
-   `aclivery brief show <slug>` tells you the single next question or command. The brief is your memory.
-1. **Know the car.** Get the car folder id (e.g. `rss_gtm_protech_p92_f6`). If `aclivery car info <id>` says
-   there is no pack, ask for the car's `.kn5` and run `aclivery car prep <kn5> --skins <skins dir>` once.
-   Skill: `ac-car-prep`.
-2. **Know the design: analyse the references** (skill `ac-analyze`). List the layers: base, large graphics, **subtle tonal art**,
-   accents, logos, text, plates, and what must not overlap. Do not drop the quiet details: they often carry the look.
-   For each element decide which part of the car it goes on. Run `aclivery car notes <id>` first: it holds what is already known.
-3. **Get assets.** Logos: skill `ac-logos`. Ask the user before downloading anything.
-4. **Find the panels.** `aclivery panel regions <id>` then `aclivery panel list <id> --region <name>`.
-   Skill: `ac-panels`. Prefer panels with high `vis` (visible from outside) and the right `side`.
-5. **Place things.** One `aclivery decal` (or `aclivery text` for names and numbers) call per element, each adding to the same texture PNG.
-   Skill: `ac-decal`. Once you know the panels, prefer ONE design file and `aclivery apply design.json` (skill `ac-apply`): it checks everything first, orders the layers and rebuilds the skin from scratch.
-6. **Look.** `aclivery render <id> --skin <folder>` (one image, several views), and `aclivery compare <id> --skin <folder>
-   --brief <slug>` (reference next to render). Name the biggest differences and fix those. Repeat 5-6. Skill: `ac-render`.
-7. **Ship.** Always finish with a packaged skin, even a rough one, unless the user said not to: `aclivery apply design.json --export`
-   (or `aclivery export`), then `aclivery validate skin <dist folder>/<Name>`. Skill: `ac-skin-export`. A skin that was never packaged is not finished.
+The brief is your only memory. After EVERY step run `aclivery brief show <slug>`: it prints the next step from what is recorded. If you lose your thread, run it.
+
+1. **Intake** (`ac-intake`): car pack (`ac-car-prep`), references with a view each. Look for a flat side, a door close-up, the front, the rear and a top view.
+2. **Analysis** (`ac-analyze`): layers with `where` in the car's own words, `confidence` and `evidence`. Run `aclivery car notes <id>` first.
+3. **Sourcing plan**: set `source` on every layer: `fetch` (a brand mark that exists as a file: never redraw it), `generate` (livery art with no file: a pattern placeholder), `construct` (text, numbers, plates, colours), `stock` (already on the car), `skip` (with `why`).
+4. **Assets** (`ac-logos`): for every `fetch` layer find the brand's file in `assets/logos`, cut the mark out with `logo prep`, set the layer's `asset`. No file: ask the user for a source to download from; wait for the yes.
+5. **Build in parts** (`ac-apply`, `ac-panels`): write `design.json` (`"brief": "<slug>"`, a `covers` word per element), `apply --check`, then `apply --only ext_main`, then the other textures.
+6. **Fix rounds** (`ac-render`): `apply` prints a review. Fix every `missing:` line first, then the 3 to 5 biggest differences in `compare.png`. Three rounds, then stop.
+7. **Ship** (`ac-skin-export`): `apply --export`, `validate skin`, then the report. A skin that was never packaged is not finished.
 
 ## Rules
 

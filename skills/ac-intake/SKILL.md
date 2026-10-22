@@ -15,7 +15,7 @@ aclivery status                                   what the machine has, and the 
 aclivery brief init <slug> --title "..." --car <id>
 aclivery brief show <slug>                        prints THE next step: a question to ask, or a command to run
 aclivery brief set <slug> baseColour white
-aclivery brief add <slug> elements '[{"what":"Monster logo","target":"both rear quarters"}]'
+aclivery brief add <slug> references '{"file":"photo.jpg","view":"top"}'   a view per photo (flat side, door close-up, front, rear, top)
 aclivery brief add <slug> decisions '{"q":"Exact logo or simplified?","a":"exact","by":"user"}'
 aclivery render <car> --regions                   coloured map of the car so the user can point at parts
 aclivery car notes <car>                          what is already known about this car
@@ -37,6 +37,8 @@ aclivery car notes <car>                          what is already known about th
    `brief show` restores it.
 9. Ask before any download or anything that leaves the machine (`ac-logos` has the rule). Say what is approximate and
    not verified in the game.
+
+Do not keep a list of elements in the brief: the analysis layers (with their `source`) are the plan and `design.json` is the work (see `docs/agent-flow.md`).
 
 When the brief has references, `brief show` will ask for the analysis: use `ac-analyze` (study the references into layers,
 including the subtle ones). When it says nothing is missing, continue with `ac-livery` (place, render, ship).

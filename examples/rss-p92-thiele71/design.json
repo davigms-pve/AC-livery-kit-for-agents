@@ -582,39 +582,6 @@
     },
     {
      "panel": "left_mid_upper_2",
-     "color": "#111111",
-     "at": [
-      0.53,
-      0.13,
-      0.05,
-      0.067
-     ],
-     "overlap": true
-    },
-    {
-     "panel": "left_mid_upper_2",
-     "color": "#dd0000",
-     "at": [
-      0.53,
-      0.197,
-      0.05,
-      0.067
-     ],
-     "overlap": true
-    },
-    {
-     "panel": "left_mid_upper_2",
-     "color": "#ffce00",
-     "at": [
-      0.53,
-      0.264,
-      0.05,
-      0.067
-     ],
-     "overlap": true
-    },
-    {
-     "panel": "left_mid_upper_2",
      "text": "T. THIELE",
      "ink": "#222222",
      "bold": true,
@@ -624,39 +591,6 @@
       0.3,
       0.3
      ]
-    },
-    {
-     "panel": "right_mid_upper",
-     "color": "#111111",
-     "at": [
-      0.1,
-      0.13,
-      0.05,
-      0.067
-     ],
-     "overlap": true
-    },
-    {
-     "panel": "right_mid_upper",
-     "color": "#dd0000",
-     "at": [
-      0.1,
-      0.197,
-      0.05,
-      0.067
-     ],
-     "overlap": true
-    },
-    {
-     "panel": "right_mid_upper",
-     "color": "#ffce00",
-     "at": [
-      0.1,
-      0.264,
-      0.05,
-      0.067
-     ],
-     "overlap": true
     },
     {
      "panel": "right_mid_upper",
@@ -1188,6 +1122,42 @@
       0.05
      ],
      "overlap": true
+    },
+    {
+     "panel": "whole",
+     "color": "#111111",
+     "at": [
+      0.092,
+      0.2,
+      0.01,
+      0.052
+     ],
+     "overlap": true,
+     "covers": "flag"
+    },
+    {
+     "panel": "whole",
+     "color": "#dd0000",
+     "at": [
+      0.102,
+      0.2,
+      0.01,
+      0.052
+     ],
+     "overlap": true,
+     "covers": "flag"
+    },
+    {
+     "panel": "whole",
+     "color": "#ffce00",
+     "at": [
+      0.112,
+      0.2,
+      0.01,
+      0.052
+     ],
+     "overlap": true,
+     "covers": "flag"
     }
    ]
   },

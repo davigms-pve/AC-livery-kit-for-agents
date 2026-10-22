@@ -115,3 +115,9 @@ Regions (hand-drawn boxes by the user, aligned with the profile): 1 front_bumper
   `centre_tail_upper_5` is the rear deck lid; `centre_tail_upper_7` a small patch at the rear centre (not used).
 - **Roof `centre_mid` upright frame:** text drawn upright reads correctly for someone at the car's LEFT side looking across (its "up" is toward the car's RIGHT, x runs front to rear). A logo meant to run along the car
   with its wide end to the rear needs `rotate: 90`.
+
+## German flag and the quarter window (2026-10-22)
+
+- The small German flag sits in the rear-quarter window, not on the roof strip. On `glass_2` (`whole`) the three stripes are stacked along the texture's **x** (each `0.010` wide, `0.052` long, starting `at [0.092, 0.20]`: black, red, gold): the texture's y runs left-right on the car,
+  so stripes stacked in y would stand upright. A symmetric flag survives the left/right sharing of these texels; text does not (it reads backwards on one side), so T. THIELE stays on the roof strips.
+- Not placed yet: the small Porsche crest on the front fender next to the wheel and on the nose (needs a real crest file).

@@ -6,6 +6,8 @@ it is not part of the kit yet. Last updated 2026-10-21.
 
 Legend: **built** = exists and was run; **partial** = works with limits; **gap** = not built.
 
+The order, the memory and the exit test of each stage are in `docs/agent-flow.md` (the audit that produced it is there too).
+
 ## The pipeline
 
 | # | Step | Skill | Needs before it | Command(s) | Produces | Done when |

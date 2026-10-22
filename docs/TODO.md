@@ -135,6 +135,9 @@ artwork). Treat it as a required layer, not a missing asset. Logos must not over
   | Tyre lettering | out of scope (stock tyre) | |
 
 - [x] **Run 2 fixes (2026-10-22):** `brief show` lists the references; the base colour is read from the analysis; bolder default `leaves`/`ink-lines`; `apply --check` suggests the nearest box fully on the surface; the P92 notes open with a "complete skin" checklist.
+- [x] **Agent flow audit (2026-10-22)** -> `docs/agent-flow.md`: seven stages, a `source` per layer (fetch / generate / construct / stock / skip) so a brand mark is not redrawn, `brief show` walks the stages, `apply --only` builds in parts, layer `built` status written back. Not yet re-tested with a model.
+- [ ] **Porsche crest** (owner, 2026-10-22): the small crest on the front fender next to the wheel (and on the nose) is not placed; it needs a real crest file (fetch, the owner's yes): `assets/logos/porsche.png` is the wordmark only.
+- [x] **German flag** is now in the quarter window (shared glass texture; stripes stacked along the texture's x so they read horizontal; symmetric, so mirroring is harmless), not on the roof strip.
 - [ ] **Iteration gap.** The hand-built draft 3 is much better than the Haiku run because it went through about 15 compare-and-fix cycles with probe renders; Haiku does one pass. Next kit work: make the loop cheap and short (a summary after `apply` that names the biggest differences from the references, a fix list the model works through) and let a model do two or three rounds; then rerun M1.
 - [ ] **B24 Number and lettering styles.** Made-up number styles: match from a short list of free fonts tagged by style (italic, condensed, brush, stencil) via `text --font`, rather than freehand redrawing.
   Unverified first: whether the renderer on Windows can use a font file that is not installed (else convert text to paths). Bundling fonts needs the owner's yes, a licence check and a NOTICE line.

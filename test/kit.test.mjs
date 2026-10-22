@@ -616,3 +616,56 @@ test('car stock never overwrites an existing file without --force', () => {
   assert.match(r.stdout, /kept .*already exists/);
   assert.equal(fs.readFileSync(out, 'utf8'), 'precious');
 });
+
+test('brief plan: NEXT walks sourcing, fetch assets, the design build, the missing layers, the rounds and the export', async () => {
+  const { gaps, suggestSource } = await import('../src/commands/brief.mjs');
+  const files = new Set(['assets/logos/claw_prepped.png']);
+  const fe = (p) => files.has(p);
+  const layer = (o) => ({ confidence: 'high', evidence: 'a.jpg left', ...o });
+  const base = () => ({ slug: 'pp', car: { id: 'x' }, references: [{ file: 'a.jpg', view: 'left' }], analysis: { layers: [
+    layer({ kind: 'base', what: 'white' }),
+    layer({ kind: 'logo', what: 'Monster claw', brand: 'Monster Energy', part: 'symbol', where: 'hood' }),
+    layer({ kind: 'tonal-art', what: 'grey leaves', tone: 'subtle' }),
+    layer({ kind: 'text', what: 'driver name' }) ] } });
+  const next = (b) => gaps(b, { packExists: true, fileExists: fe })[0];
+  assert.deepEqual(['claw', 'leaves', 'name'].map((_, i) => suggestSource(base().analysis.layers[i + 1])), ['fetch', 'generate', 'construct']);
+  // 1. no sources yet: decide them all, with suggestions
+  let b = base();
+  assert.match(next(b).do, /decide how each layer is produced.*Suggested: 1 fetch, 2 generate, 3 construct/s);
+  // 2. sources set, the brand mark has no file: fetch it (no placeholder)
+  b.analysis.layers[1].source = 'fetch'; b.analysis.layers[2].source = 'generate'; b.analysis.layers[3].source = 'construct';
+  assert.match(next(b).do, /layer 1 "Monster claw" is a brand mark to FETCH, not redraw/);
+  b.analysis.layers[1].asset = 'assets/logos/claw_placeholder.png';
+  assert.match(next(b).do, /to FETCH/);                     // a placeholder does not count
+  // 3. the real file: now build in parts
+  b.analysis.layers[1].asset = 'assets/logos/claw_prepped.png';
+  assert.match(next(b).do, /build in parts: write the design file.*--only ext_main/s);
+  // 4. a build with missing layers, then rounds, then export, then done
+  b.build = { round: 1, missing: 2, elements: 10, cutOff: 0, exported: false };
+  assert.match(next(b).do, /left 2 layer\(s\) missing/);
+  b.build.missing = 0;
+  assert.match(next(b).do, /rounds done: 1 of 3/);
+  b.build.round = 3;
+  assert.match(next(b).do, /export: aclivery apply <design> --export/);
+  b.build.exported = true;
+  assert.equal(gaps(b, { packExists: true, fileExists: fe }).length, 0);
+  // a skipped layer must say why
+  b.analysis.layers[3].source = 'skip';
+  assert.match(next(b).do, /marked skip: say why/);
+});
+
+test('apply --only rebuilds the chosen textures and leaves the others as they were; it cannot export', async () => {
+  const home = tmp(); applyCar(home, 'on');
+  const dir = tmp(), env = { ACLIVERY_HOME: home }, out = path.join(dir, 'o'), file = path.join(dir, 'd.json');
+  const design = (c) => ({ car: 'on', textures: { ext_main: { fill: '#ffffff', elements: [{ panel: 'a', color: c, at: [0, 0, 0.5, 0.5] }] }, plates: { fill: '#000000', elements: [{ panel: 'whole', color: '#ff00ff', at: [0, 0, 0.5, 0.5] }] } } });
+  fs.writeFileSync(file, JSON.stringify(design('#ff0000')));
+  assert.equal(run(['apply', file, '--no-render', '--out', out], env).status, 0);
+  fs.writeFileSync(file, JSON.stringify(design('#00ff00')));
+  const r = run(['apply', file, '--no-render', '--only', 'ext_main', '--out', out], env);
+  assert.equal(r.status, 0, r.stderr);
+  const body = await px(path.join(out, 'work', 'EXT_Main.png')), plate = await px(path.join(out, 'work', 'Plates.png'));
+  assert.deepEqual(body(10, 10), [0, 255, 0, 255]);        // rebuilt
+  assert.deepEqual(plate(10, 10), [255, 0, 255, 255]);      // untouched, still there
+  assert.match(run(['apply', file, '--only', 'nope', '--out', out], env).stderr, /no such texture in the design: nope/);
+  assert.match(run(['apply', file, '--only', 'ext_main', '--export', '--out', out], env).stderr, /export needs a full build/);
+});

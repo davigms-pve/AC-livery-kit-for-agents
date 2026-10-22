@@ -335,7 +335,9 @@ export function coverage(design, brief, regions) {
   }
   const regionOf = (name) => (regions?.regions ?? []).filter((r) => (r.panels ?? []).some((p) => p.name === name)).map((r) => r.name);
   const out = [];
+  const answered = [];
   for (const { l, i } of layers) {
+    const before = out.length;
     const ok = KIND_OK[l.kind] ?? (() => true);
     const keys = new Set([...words(l.what), ...words(l.brand)]);
     const explicit = items.filter((it) => it.e.covers && (String(it.e.covers) === String(i) || [...words(it.e.covers)].some((w) => keys.has(w))));
@@ -344,13 +346,19 @@ export function coverage(design, brief, regions) {
     const label = `layer ${i} "${String(l.what ?? l.kind).slice(0, 60)}" (${l.kind})`;
     if (!explicit.length && !named.length && !['tonal-art', 'accent', 'plate', 'marking'].includes(l.kind)) { out.push(`${label}: no element answers it (no text, image name or "covers" matches). Add one, or record a decision in the brief for leaving it out.`); continue; }
     if (!mine.length) { out.push(`${label}: the design has no element of this kind. Add one, or record a decision for leaving it out.`); continue; }
-    if (l.kind === 'plate') continue;
+    if (l.source === 'fetch' && l.asset) {
+      const want = path.basename(String(l.asset)).toLowerCase(), used = Object.values(design.assets ?? {}).map((a) => path.basename(String(typeof a === 'string' ? a : a?.file ?? '')).toLowerCase());
+      if (!used.includes(want)) { out.push(`${label} is a brand mark to fetch (${path.basename(String(l.asset))}) but no asset of the design uses that file. Use it (cut with prep), or change the layer's source and say why.`); continue; }
+    }
+    if (l.kind === 'plate') { answered.push(i); continue; }
     for (const p of places(l.where)) {
       const here = mine.some((it) => it.panels.includes('*') || it.panels.some((pn) => regionOf(pn).some((r) => p.inRegion.test(r))) || it.role !== 'ext_main');
       const known = (regions?.regions ?? []).some((r) => p.inRegion.test(r.name));
       if (known && !here) out.push(`${label} says "${p.name}" but no matching element sits there. Add it, or record a decision.`);
     }
+    if (out.length === before) answered.push(i);
   }
+  out.answered = answered;
   return out;
 }
 
@@ -366,6 +374,7 @@ const fmt = (n) => Number(n.toFixed(4));
 
 export async function run(argv) {
   const { flags, positional } = parseArgs(argv, { bools: ['check', 'export', 'no-render'] });
+  const only = flags.only ? String(flags.only).split(',').map((s) => s.trim()).filter(Boolean) : null;
   const [file] = positional;
   if (!file) throw new UsageError(help);
   let design;
@@ -379,6 +388,7 @@ export async function run(argv) {
   let brief = null;
   if (design.brief) { try { brief = JSON.parse(fs.readFileSync(path.join(home(), 'projects', String(design.brief), 'brief.json'), 'utf8')); } catch { /* no such brief: coverage is skipped */ } }
   const missing = coverage(design, brief, pack.regions);
+  const answered = missing.answered ?? [];
   const count = Object.values(design.textures).reduce((n, t) => n + t.elements.length, 0);
   if (flags.check) {
     console.log(`design ok: ${Object.keys(design.textures).length} texture(s), ${count} element(s)`);
@@ -392,13 +402,18 @@ export async function run(argv) {
     return 0;
   }
 
+  if (only) {
+    const bad = only.filter((r) => !design.textures[r]);
+    if (bad.length) throw new UsageError(`--only: no such texture in the design: ${bad.join(', ')} (have: ${Object.keys(design.textures).join(', ')})`);
+    if (flags.export) throw new UsageError('--only builds part of the skin; export needs a full build: run apply without --only, then with --export');
+  }
   const name = design.name ?? path.parse(file).name;
   const out = path.resolve(flags.out ?? path.join(root, 'assets', 'builds', slug(name)));
   const work = path.join(out, 'work'), marker = path.join(work, '.aclivery-work');
   if (fs.existsSync(work) && !fs.existsSync(marker) && fs.readdirSync(work).length) {
     throw new UsageError(`${work} exists and was not made by apply. Pass another --out (output of an old build script can simply be deleted).`);
   }
-  fs.rmSync(work, { recursive: true, force: true });
+  if (!only) fs.rmSync(work, { recursive: true, force: true });
   fs.mkdirSync(path.join(work, 'prep'), { recursive: true });
   fs.writeFileSync(marker, 'made by aclivery apply; rebuilt on every run\n');
   for (const w of warnings) console.log(`warning: ${w}`);
@@ -408,6 +423,7 @@ export async function run(argv) {
   const transparent = [];
 
   for (const [role, t] of Object.entries(design.textures)) {
+    if (only && !only.includes(role)) continue;
     if (t.size && (`${pack.profile.textures[role].width}x${pack.profile.textures[role].height}` !== t.size)) await quiet(() => car(['size', design.car, role, t.size]));
     const tex = loadPack(design.car).profile.textures[role];
     const target = path.join(work, `${path.parse(tex.file).name}.png`);
@@ -506,7 +522,9 @@ export async function run(argv) {
     if (brief) {
       try {   // keep the brief in step with the build
         const bf = path.join(home(), 'projects', String(design.brief), 'brief.json'), bj = JSON.parse(fs.readFileSync(bf, 'utf8'));
-        bj.build = { design: path.relative(root, path.resolve(file)).replace(/\\\\/g, '/'), round, textures: Object.keys(design.textures), elements: count, missing: missing.length, cutOff: cut.length, at: new Date().toISOString() };
+        const prevBuild = bj.build ?? {};
+        for (const [i, l] of (bj.analysis?.layers ?? []).entries()) { if (answered.includes(i)) l.built = { round }; else delete l.built; }
+        bj.build = { design: path.relative(root, path.resolve(file)).replace(/\\\\/g, '/'), round, textures: Object.keys(design.textures), elements: count, missing: missing.length, cutOff: cut.length, exported: !!flags.export || !!prevBuild.exported, part: only ? only.join(',') : null, at: new Date().toISOString() };
         fs.writeFileSync(bf, JSON.stringify(bj, null, 1));
       } catch { /* the brief is optional */ }
     }

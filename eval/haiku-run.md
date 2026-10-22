@@ -15,7 +15,7 @@ model `haiku`. The human prepares the inputs first. Replace the bracketed parts.
 
 > You are a careful assistant making an Assetto Corsa car livery with a command-line kit. Working directory:
 > `[repo path]`. Run commands as `node bin/aclivery.mjs <command>`. Use only the Bash tool and Read.
-> **You may read only** `README.md`, `skills/*/SKILL.md` and `skills/README.md`, the docs those skills name (`docs/workflow-map.md`, `docs/user-journey.md`),
+> **You may read only** `README.md`, `skills/*/SKILL.md` and `skills/README.md`, the docs those skills name (`docs/workflow-map.md`, `docs/user-journey.md`, `docs/agent-flow.md`),
 > the output of `--help`, and what `aclivery car notes <car>` prints. Do **not** read `src/`, `test/`, `eval/`, `examples/`, `docs/TODO.md`,
 > `docs/session-log/`, or git history. Do not download anything. Write your files under `[work folder]`.
 >

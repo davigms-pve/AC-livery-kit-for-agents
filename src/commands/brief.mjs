@@ -16,7 +16,9 @@ aclivery brief list                                     all projects
   analysis: {"summary":"...","layers":[{"kind":"logo","what":"Monster claw","brand":"Monster Energy","part":"symbol","where":"doors, hood",
   "tone":"bold","confidence":"high|medium|low","evidence":"which reference photo and view shows it"}],
   "overlapRules":"which things must not cover each other","feel":"what makes it recognisable"} (see skill ac-analyze).
-  Every layer needs confidence and evidence; low confidence (or a brand read by shape only) becomes a question for the user.`;
+  Every layer needs confidence and evidence; low confidence (or a brand read by shape only) becomes a question for the user.
+  Then every layer needs a "source": fetch (a brand mark that exists as a file; set "asset" to the prepared file), generate (livery art with no file: a pattern),
+  construct (text, numbers, plates, colours), stock (already on the car) or skip (with "why"). See docs/agent-flow.md.`;
 
 /** The body colour: set directly, or read from the analysis's base layer. */
 export const baseColourOf = (b) => b.baseColour ?? b.analysis?.layers?.find((l) => l.kind === 'base')?.what ?? null;
@@ -49,6 +51,14 @@ const parseValue = (s) => { try { return JSON.parse(s); } catch { return s; } };
  * What is missing, in the order a person should be asked. Pure function of the brief and what exists on disk,
  * so a model that has lost the thread can recompute where it is.
  */
+export const SOURCES = ['fetch', 'generate', 'construct', 'stock', 'skip'];
+export const ROUNDS = 3;
+/** A default for the source of a layer, so a model only has to confirm or change it. */
+export const suggestSource = (l) => (l.source && SOURCES.includes(l.source) ? l.source
+  : l.brand || ((l.kind === 'logo' || l.kind === 'large-graphic') && l.part) ? 'fetch'
+    : l.kind === 'tonal-art' ? 'generate'
+      : l.kind === 'marking' ? 'stock' : 'construct');
+
 export function gaps(b, { packExists = false, fileExists = (p) => fs.existsSync(p) } = {}) {
   const todo = [];
   if (!b.car?.id) todo.push({ ask: 'Which car is this for? (the car folder name, e.g. rss_gtm_protech_p92_f6)', set: `car.id` });
@@ -75,11 +85,14 @@ export function gaps(b, { packExists = false, fileExists = (p) => fs.existsSync(
       }
     });
   }
-  if (b.analysis?.layers?.some((l) => l.tone === 'subtle') && !(b.elements ?? []).some((e) => e.tone === 'subtle' || /tonal|ink|pattern|texture|art/i.test(e.what ?? ''))) {
+  const live = layers.map((l, i) => ({ l, i })).filter(({ l }) => l.kind !== 'base');
+  // The plan flow (sources per layer, the design file) replaces the old elements list; an old brief that already has elements and no sources keeps the old questions.
+  const planned = live.some(({ l }) => l.source) || !!b.build || (live.length > 0 && !b.elements?.length);
+  if (!planned && b.analysis?.layers?.some((l) => l.tone === 'subtle') && !(b.elements ?? []).some((e) => e.tone === 'subtle' || /tonal|ink|pattern|texture|art/i.test(e.what ?? ''))) {
     todo.push({ ask: 'The references show subtle tonal art but no element covers it. Add one (a placeholder asset is fine), do not drop it. Is there an original file for it?', add: 'elements' });
   }
   if (!baseColourOf(b)) todo.push({ ask: 'What is the base colour of the car?', set: 'baseColour' });
-  if (!b.elements?.length) todo.push({ ask: 'List what the livery needs: sponsors, text, number, art. One line each.', add: 'elements' });
+  if (!planned && !b.elements?.length) todo.push({ ask: 'List what the livery needs: sponsors, text, number, art. One line each.', add: 'elements' });
   b.elements?.forEach((e, i) => {
     if (!e.target && !e.panel) todo.push({ ask: `Where does "${e.what}" go on the car?`, set: `elements.${i}.target` });
     else if (!e.panel) todo.push({ ask: `Which panel is "${e.what}" (${e.target})?`, do: `aclivery panel regions ${b.car?.id ?? '<car>'}`, set: `elements.${i}.panel` });
@@ -91,6 +104,29 @@ export function gaps(b, { packExists = false, fileExists = (p) => fs.existsSync(
     const n = b.elements.find((e) => e.status !== 'placed' && e.status !== 'checked');
     todo.push(n ? { ask: null, do: `place "${n.what}": aclivery decal ${b.car.id} --panel ${n.panel} --image ${n.asset ?? '<image>'} ...`, then: 'aclivery render, look, set status' }
       : { ask: null, do: `aclivery render ${b.car.id} --skin <work folder>, compare with the references, then set status to checked` });
+  }
+  // THE PLAN (stages 3 to 6): how each layer is produced, then the assets it needs, then the design file, then the fix rounds, then the export.
+  // The decision per layer lives in the brief, so it is not lost halfway: fetch = a brand mark that exists as a file; generate = livery art with no
+  // file (a placeholder pattern); construct = text, numbers, plates, solid colours the kit draws; stock = already on the car's own texture; skip = left out, with a reason.
+  if (!unrated.length && live.length) {
+    const nosrc = live.filter(({ l }) => !SOURCES.includes(l.source));
+    if (nosrc.length) {
+      todo.push({ ask: null, do: `decide how each layer is produced (set "source" on every layer): fetch = a brand mark or logo that exists as a file (never redraw it); generate = hand-drawn livery art with no file (a pattern placeholder); construct = text, numbers, plates, solid colours; stock = already on the car's own texture; skip = leave out, with "why". Suggested: ${nosrc.map(({ l, i }) => `${i} ${suggestSource(l)}`).join(', ')}. Missing on: ${nosrc.map(({ l, i }) => `${i} "${String(l.what ?? l.kind).slice(0, 40)}"`).join(', ')}`, set: `analysis.layers.${nosrc[0].i}.source` });
+    } else {
+      for (const { l, i } of live) {
+        if (l.source === 'skip' && !String(l.why ?? '').trim()) todo.push({ ask: null, do: `layer ${i} "${l.what}" is marked skip: say why (analysis.layers.${i}.why) and add it to decisions`, set: `analysis.layers.${i}.why` });
+        if (l.source === 'fetch' && (!l.asset || /placeholder/i.test(String(l.asset)) || !fileExists(l.asset))) {
+          todo.push({ ask: null, do: `layer ${i} "${l.what}" is a brand mark to FETCH, not redraw. 1) look in assets/logos (aclivery logo inspect <file>) for the brand's file; 2) cut the mark out of it (logo prep --crop --erase --key-bg or --key-light --tint --trim, skill ac-logos); 3) set analysis.layers.${i}.asset to the prepared file. If no file exists, ask the user which source to download from (name URL, host, type) and wait for the yes. A placeholder is only allowed when the user says so.`, set: `analysis.layers.${i}.asset` });
+        }
+      }
+      const pending = todo.some((t) => /to FETCH|marked skip/.test(t.do ?? ''));
+      if (!pending && !b.build) todo.push({ ask: null, do: `build in parts: write the design file (one element per layer; set "brief": "${b.slug ?? '<slug>'}"; give each element "covers": "<layer word>"), then aclivery apply <design.json> --check, then apply. Part 1: the body texture (aclivery apply ... --only ext_main), then the other textures (plates, banner, glass, grille).` });
+      else if (!pending && b.build) {
+        if (b.build.missing > 0) todo.push({ ask: null, do: `the last build left ${b.build.missing} layer(s) missing: run aclivery apply <design> --check, fix every "missing:" line (add the element, or record a decision), then build again` });
+        else if ((b.build.round ?? 0) < ROUNDS) todo.push({ ask: null, do: `rounds done: ${b.build.round} of ${ROUNDS}. Look at compare.png, name the 3 to 5 biggest differences from the references, fix those in the design, apply again` });
+        else if (!b.build.exported) todo.push({ ask: null, do: 'export: aclivery apply <design> --export, then aclivery validate skin <dist folder>/<Name>' });
+      }
+    }
   }
   if (b.openQuestions?.length) todo.push({ ask: `Open question: ${b.openQuestions[0]}`, note: 'decide with the user, then add a decision and remove it from openQuestions' });
   return todo;
@@ -133,6 +169,11 @@ export async function run(argv) {
     console.log(`  car: ${b.car?.id ?? '?'}${b.car?.id ? (packExists ? '  (car pack ready)' : '  (no car pack yet)') : ''}   base: ${baseColourOf(b) ?? '?'}   driver: ${b.driver?.name ?? '?'} #${b.driver?.number ?? '?'}`);
     console.log(`  references: ${b.references?.length ?? 0}   analysis: ${b.analysis ? (b.analysis.layers?.length ?? 0) + ' layers' : 'not done'}   elements: ${b.elements?.length ?? 0}   decisions: ${b.decisions?.length ?? 0}`);
     if (b.build) console.log(`  built: round ${b.build.round}, ${b.build.elements} element(s) in ${b.build.design}, ${b.build.missing} layer(s) missing, ${b.build.cutOff} cut off  (the design file, not this list, is the source of truth)`);
+    const planRows = (b.analysis?.layers ?? []).map((l, i) => [i, l]).filter(([, l]) => l.kind !== 'base' && l.source);
+    for (const [i, l] of planRows) {
+      const state = l.source === 'fetch' ? (l.asset ? (/placeholder/i.test(l.asset) ? 'PLACEHOLDER' : fs.existsSync(l.asset) ? 'file ok' : 'FILE MISSING') : 'NO FILE YET') : '';
+      console.log(`    L${i} [${l.source}] ${String(l.what).slice(0, 48)}${state ? '  ' + state : ''}${l.built ? '  built r' + l.built.round : '  not built'}`);
+    }
     for (const [i, r] of (b.references ?? []).entries()) console.log(`    ref ${i}. ${path.basename(r.file ?? '?')}  view: ${r.view ?? '?'}${r.notes ? '  ' + r.notes : ''}`);
     for (const [i, e] of (b.elements ?? []).entries()) console.log(`    ${i}. ${e.what}  ->  ${e.panel ?? e.target ?? '?'}  [${e.status ?? 'idea'}]${e.asset ? '  ' + path.basename(e.asset) : ''}`);
     if (!todo.length) { console.log('\nNothing missing. Ship it: aclivery export, then check in Content Manager.'); return 0; }
