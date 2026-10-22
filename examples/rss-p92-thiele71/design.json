@@ -12,7 +12,27 @@
     "trim": true
    }
   },
-  "claw": "assets/logos/claw_placeholder.png",
+  "claw": {
+   "file": "assets/logos/monster_logo.png",
+   "prep": {
+    "crop": [
+     0.3,
+     0.1,
+     0.42,
+     0.455
+    ],
+    "erase": [
+     0.74,
+     0.84,
+     0.26,
+     0.16
+    ],
+    "keyBg": true,
+    "tint": "#7d8085",
+    "trim": true,
+    "size": 1200
+   }
+  },
   "porsche": {
    "file": "assets/logos/porsche.png",
    "prep": {

@@ -508,3 +508,13 @@ test('logo prep --crop keeps the chosen part of the picture and rejects bad boxe
   assert.equal(bad.status, 2);
   assert.match(bad.stderr, /--crop must be/);
 });
+
+test('logo prep --erase clears a box so stray bits can be removed', async () => {
+  const dir = tmp(), src = path.join(dir, 'in.png'), out = path.join(dir, 'out.png');
+  const w = 40, h = 40, raw = Buffer.alloc(w * h * 3, 20);   // all dark and opaque
+  await sharp(raw, { raw: { width: w, height: h, channels: 3 } }).png().toFile(src);
+  assert.equal(run(['logo', 'prep', src, '--out', out, '--erase', '0.5,0.5,0.5,0.5']).status, 0);
+  const p = await px(out);
+  assert.equal(p(5, 5)[3], 255); assert.equal(p(30, 30)[3], 0);
+  assert.equal(run(['logo', 'prep', src, '--out', out, '--erase', '1,2']).status, 2);
+});

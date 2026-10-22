@@ -7,9 +7,10 @@ import { root } from '../lib/paths.mjs';
 
 export const help = `aclivery logo fetch <url> --name <name> [--yes]   download one logo into assets/logos/ (asks first)
 aclivery logo inspect <file>                        size, transparency, background, and quality warnings
-aclivery logo prep <in> --out <png> [--crop x,y,w,h] [--key-bg | --key-light] [--tint #RRGGBB] [--trim] [--size 2000]
+aclivery logo prep <in> --out <png> [--crop x,y,w,h] [--key-bg | --key-light] [--erase x,y,w,h] [--tint #RRGGBB] [--trim] [--size 2000]
     --key-bg  turn a near-uniform background (taken from the corners) transparent
     --crop    keep only part of the picture, as fractions x,y,w,h (for example 0,0,1,0.62 keeps the top 62%: the MONSTER and ENERGY rows of a lockup)
+    --erase   clear a box (fractions x,y,w,h of the cropped picture) to remove stray bits, for example a piece of the next word left at an edge
     --key-light  make light neutral pixels (white, light grey) transparent: for logos with a baked-in checkerboard or a light backdrop that is not one flat colour.
               Coloured and dark parts stay; light edges become semi-transparent. Check the result on a dark background.
     --tint    recolour every opaque pixel, keeping the shape (for one-colour decals)
@@ -148,6 +149,11 @@ async function prep(file, flags) {
       const a = mn >= 190 ? 0 : mn <= 140 ? 255 : Math.round(((190 - mn) / 50) * 255);
       data[i + 3] = Math.min(data[i + 3], a);
     }
+  }
+  if (flags.erase) {
+    const c = String(flags.erase).split(',').map(Number);
+    if (c.length !== 4 || c.some((n) => Number.isNaN(n)) || c[0] < 0 || c[1] < 0 || c[2] <= 0 || c[3] <= 0) throw new UsageError('--erase must be x,y,w,h fractions, like 0.7,0.8,0.3,0.2');
+    for (let y = Math.floor(c[1] * h); y < Math.min(h, Math.ceil((c[1] + c[3]) * h)); y++) for (let x = Math.floor(c[0] * w); x < Math.min(w, Math.ceil((c[0] + c[2]) * w)); x++) data[(y * w + x) * 4 + 3] = 0;
   }
   if (flags.tint) {
     const m = /^#?([0-9a-f]{6})$/i.exec(String(flags.tint));

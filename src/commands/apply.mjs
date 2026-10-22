@@ -51,7 +51,7 @@ export const help = `aclivery apply <design.json> [--out dir] [--check] [--no-re
 
 const LAYERS = ['tone', 'paint', 'logo', 'text'];
 const TOP = ['car', 'name', 'brief', 'colors', 'assets', 'textures', 'skin'];
-const ASSET = ['file', 'prep'], PREP = ['crop', 'keyBg', 'keyLight', 'tint', 'trim', 'size'];
+const ASSET = ['file', 'prep'], PREP = ['crop', 'erase', 'keyBg', 'keyLight', 'tint', 'trim', 'size'];
 const TEXTURE = ['fill', 'base', 'size', 'elements'];
 const TEXT_OPTS = ['ink', 'font', 'bold', 'italic', 'spacing', 'outline'];
 const ELEMENT = ['panel', 'panels', 'pattern', 'density', 'seed', 'image', 'color', 'text', 'at', 'opacity', 'rotate', 'overlap', 'label', 'layer', 'lines', ...TEXT_OPTS];
@@ -270,6 +270,7 @@ async function prepareAssets(design, dir) {
     if (!a.prep) { assetFile[aName] = src; continue; }
     const dst = path.join(dir, `${aName}.png`), args = ['prep', src, '--out', dst];
     if (a.prep.crop) args.push('--crop', a.prep.crop.join(','));
+    if (a.prep.erase) args.push('--erase', a.prep.erase.join(','));
     if (a.prep.keyBg) args.push('--key-bg');
     if (a.prep.keyLight) args.push('--key-light');
     if (a.prep.tint) args.push('--tint', a.prep.tint);

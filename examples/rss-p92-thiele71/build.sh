@@ -8,6 +8,7 @@ set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$HERE/../.."
 [ -f "$ROOT/assets/logos/claw_placeholder.png" ] || node "$HERE/make_claw.mjs" "$ROOT/assets/logos/claw_placeholder.png"
+[ -f "$ROOT/assets/logos/monster_logo.png" ] || echo "note: the design needs assets/logos/monster_logo.png (the claw): fetch it with aclivery logo fetch, see assets.md"
 [ -f "$ROOT/assets/logos/sc_disc_placeholder.png" ] || node "$HERE/make_emblem.mjs" "$ROOT/assets/logos/sc_disc_placeholder.png"
 # Stock textures the design starts from come from the car model (local only, never committed):
 for role in glass_2; do [ -f "$ROOT/assets/stock/EXTERNAL_glass.dds" ] || node "$ROOT/bin/aclivery.mjs" car stock rss_gtm_protech_p92_f6 $role >/dev/null; done
