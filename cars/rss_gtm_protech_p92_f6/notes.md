@@ -118,6 +118,7 @@ Regions (hand-drawn boxes by the user, aligned with the profile): 1 front_bumper
 
 ## First in-game check (owner's screenshot, 2026-10-22, Opus build)
 
+- Three screenshots in all (2026-10-22, see TODO B7): the body, banner and glass textures load and look right; **the DELS 71 plate card (`Door_Plates.dds`, exported 2048x640 DXT5) is not visible on either door in any of the views**: unresolved; diagnose with a solid-red test card, then the stock 256x64 size. The rest of this bullet was from the first screenshot only.
 - Verified from one screenshot: the 5 textures load (body, banner, glass, grille not seen, door plates not seen). The tonal art is nearly invisible in the game's lighting and the cyan looks paler than in our render: our renderer has no real lighting, so do not tune the art by it alone. The DELS 71 plate card and the door claw were not visible on the door in that view: unresolved, needs closer shots.
 
 ## German flag and the quarter window (2026-10-22)
