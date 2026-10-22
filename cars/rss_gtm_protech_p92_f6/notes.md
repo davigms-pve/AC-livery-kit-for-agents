@@ -98,9 +98,13 @@
 `- **Sill:** `left_rear`/`right_rear` lower strip: a black band `at [0, 0.82, 0.5, 0.12]` (right side `[0.5, ...]`) with a cyan underline at y 0.94 holds the white POTTSPEED lettering.
 `- Placeholders used by draft 3: `examples/rss-p92-thiele71/make_claw.mjs` (three ragged scratch marks) and `make_emblem.mjs` (cyan disc "SC 1919"): neither is the real artwork.
 `
-`## Dark carbon parts and the roof (verified 2026-10-22 with colour-per-panel renders)
-`
-`- **Panels that are black paint / dark carbon in the references** (draft 3 paints them \`#17181a\`): front splitter lip \`centre_nose_lower\`; the lower front fascia around the grille \`centre_nose_upper_2\`; the dive planes \`left_nose_lower\` / \`right_nose_lower\`;
-`  the fender louvres \`left_front_upper\` / \`right_front_upper\`; the lower rear bumper \`centre_tail_upper_4\`; the diffuser floor \`centre_tail_lower\` and its upper plate \`centre_tail_upper_2\` (its end fins are \`centre_tail_upper_6\`, kept cyan);
-`  the wing uprights \`left_tail_upper_3\` / \`right_tail_upper_3\`; the wing underside = the left half (x 0-0.5) of \`centre_tail\`. \`centre_tail_upper_5\` is the rear deck lid; \`centre_tail_upper_7\` a small patch at the rear centre (not used).
-`- **Roof \`centre_mid\` upright frame:** text drawn upright reads correctly for someone at the car's LEFT side looking across (its "up" is toward the car's RIGHT, x runs front to rear). A logo meant to run along the car with its wide end to the rear needs \`rotate: 90\`.
+
+## Dark carbon parts and the roof (verified 2026-10-22 with colour-per-panel renders)
+
+- **Panels that are black paint / dark carbon in the references** (draft 3 paints them `#17181a`, the colour name "carbon" in the design): front splitter lip `centre_nose_lower`; the lower front fascia around the grille
+  `centre_nose_upper_2`; the dive planes `left_nose_lower` / `right_nose_lower`; the fender-top vents `left_front_upper` / `right_front_upper` (the whole panel is about 49 x 40 cm and painting all of it made a big blotch,
+  so only a 34 x 18 cm slot, `at [0.15, 0.40, 0.70, 0.45]`, is dark); the lower rear bumper `centre_tail_upper_4`; the diffuser floor `centre_tail_lower` and its upper plate `centre_tail_upper_2`
+  (its end fins are `centre_tail_upper_6`, kept cyan); the wing uprights `left_tail_upper_3` / `right_tail_upper_3`; the wing underside = the left half (x 0-0.5) of `centre_tail`.
+  `centre_tail_upper_5` is the rear deck lid; `centre_tail_upper_7` a small patch at the rear centre (not used).
+- **Roof `centre_mid` upright frame:** text drawn upright reads correctly for someone at the car's LEFT side looking across (its "up" is toward the car's RIGHT, x runs front to rear). A logo meant to run along the car
+  with its wide end to the rear needs `rotate: 90`.
