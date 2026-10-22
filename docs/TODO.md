@@ -11,7 +11,7 @@ refer to them in commits and the brief.
 - **Milestone:** M1 = a small cloud model (Haiku) does the use case well enough from the repo alone (`docs/milestones.md`, run with `eval/haiku-run.md`,
   judged with `eval/rubric.md`). **Hermes trials are parked** until M1 passes (owner's decision, 2026-10-21).
 - **Order of things, requirements and tools:** `docs/workflow-map.md`. **Story and reasoning of the first session:** `docs/session-log/2026-10-21.md`.
-- **Next session starts with:** the owner reviews the B17 placeholder art and the analysis-confidence step, then an M1 rerun (hide other briefs first; see `eval/runs/2026-10-21-haiku-1.md`). Send the B18 ask (original art) in parallel; B12/B15 still open. The design spec (C1, `aclivery apply`) is built.
+- **Next session starts with (2026-10-22):** read `docs/agent-flow.md` (the seven stages and where the agent remembers things), then `eval/runs/` (4 Haiku runs: 29, 33, 34, 35 of 40 by the builder's scoring). The staged flow (a `source` per layer, `brief show` walking the stages, `apply --only`) is built and tested with synthetic cars but **not yet re-run with a model**: that is the next M1 run. Open art: the Porsche crest, real leaf art, SC discs, DELS lettering; B18 (ask the livery team for the originals) is still unsent. Everything is on `main` on GitHub.
 
 - **What this is:** an agent layer for Assetto Corsa livery work. A few `aclivery` commands (deterministic code) plus
   skills (what a model reads). Engine: liverykit pinned at `f5c56b8`, only touched in `src/engine.mjs`.
