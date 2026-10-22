@@ -551,3 +551,35 @@ test('apply: every build prints a review with the round number, and the round co
   assert.match(one.stdout, /review, round 1: 1 texture\(s\) \[ext_main\], elements by layer: paint 1; 0 warning\(s\), 0 element\(s\) cut off/);
   assert.match(run(['apply', file, '--no-render', '--out', out], env).stdout, /review, round 2:/);
 });
+
+test('apply: the review lists analysis layers nothing answers and places a layer names that have no element', async () => {
+  const home = tmp(), dir = tmp(), env = { ACLIVERY_HOME: home };
+  const car = path.join(home, 'cars', 'cv'); fs.mkdirSync(car, { recursive: true });
+  fs.writeFileSync(path.join(car, 'profile.json'), JSON.stringify({ bind: { body: { roles: ['ext_main'] } },
+    textures: { ext_main: { file: 'EXT_Main.dds', width: 400, height: 200 } },
+    panels: { ext_main: { hoodp: { rect: [0, 0, 0.4, 0.5], textRotation: 0, metresPerUv: [2, 1] }, roofp: { rect: [0.5, 0, 0.4, 0.5], textRotation: 0, metresPerUv: [2, 1] } } } }));
+  fs.writeFileSync(path.join(car, 'regions.json'), JSON.stringify({ regions: [{ name: 'hood_and_front_fenders', panels: [{ name: 'hoodp' }] }, { name: 'roof', panels: [{ name: 'roofp' }] }] }));
+  const claw = path.join(dir, 'claw.png');
+  await sharp({ create: { width: 20, height: 20, channels: 3, background: '#888888' } }).png().toFile(claw);
+  const pdir = path.join(home, 'projects', 'cv'); fs.mkdirSync(pdir, { recursive: true });
+  fs.writeFileSync(path.join(pdir, 'brief.json'), JSON.stringify({ slug: 'cv', analysis: { layers: [
+    { kind: 'base', what: 'white' },
+    { kind: 'logo', what: 'Monster claw', where: 'hood, roof' },
+    { kind: 'text', what: 'driver name THIELE', where: 'roof' } ] } }));
+  const file = path.join(dir, 'd.json');
+  const design = (els) => ({ car: 'cv', brief: 'cv', assets: { claw }, textures: { ext_main: { elements: els } } });
+  fs.writeFileSync(file, JSON.stringify(design([{ panel: 'hoodp', image: 'claw', at: [0.1, 0.1, 0.3, 0.3] }])));
+  const r = run(['apply', file, '--check'], env);
+  assert.match(r.stdout, /layer 1 "Monster claw" \(logo\) says "roof" but no matching element sits there/);
+  assert.match(r.stdout, /layer 2 "driver name THIELE" \(text\): no element answers it/);
+  fs.writeFileSync(file, JSON.stringify(design([{ panel: 'hoodp', image: 'claw', at: [0.1, 0.1, 0.3, 0.3] }, { panel: 'roofp', image: 'claw', at: [0.1, 0.1, 0.3, 0.3] }, { panel: 'roofp', text: 'T. THIELE', at: [0.1, 0.6, 0.5, 0.3] }])));
+  assert.doesNotMatch(run(['apply', file, '--check'], env).stdout, /missing:/);
+  // a build records itself in the brief and prints the review with the missing count
+  fs.writeFileSync(file, JSON.stringify(design([{ panel: 'hoodp', image: 'claw', at: [0.1, 0.1, 0.3, 0.3] }])));
+  const b = run(['apply', file, '--no-render', '--out', path.join(dir, 'o')], env);
+  assert.match(b.stdout, /review, round 1: .*2 layer\(s\) missing/);
+  assert.match(b.stdout, /missing: layer 1 "Monster claw"/);
+  const saved = JSON.parse(fs.readFileSync(path.join(pdir, 'brief.json'), 'utf8'));
+  assert.equal(saved.build.round, 1); assert.equal(saved.build.missing, 2);
+  assert.match(run(['brief', 'show', 'cv'], env).stdout, /built: round 1, 1 element\(s\)/);
+});

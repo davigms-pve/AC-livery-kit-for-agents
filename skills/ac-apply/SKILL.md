@@ -54,6 +54,7 @@ It is rebuilt from scratch every run, so the design file is the single source of
 - Check where things land before building: `apply --check` prints each element's panel, rough size in cm, side and height. A name that
   comes out 5 cm tall, or sits above 0.9 m (roof edge, window strip), is on the wrong panel: probe it (`render --probe`) before building.
 - Finish with `apply design.json --export`, then `validate skin` on the folder it prints.
+- **Missing layers.** With `"brief": "<slug>"` in the design, the review lists analysis layers that nothing in the design answers, and places a layer names (hood, roof, doors...) where nothing sits. Fix each `missing:` line first: add the element, or record a decision in the brief for leaving it out. Add `"covers": "<word>"` to an element so it counts for a layer.
 - **The fix loop.** Every `apply` prints a review line (round number, what was built, elements cut off, warnings) and what to do next. Do 2 to 3 rounds: look at `compare.png`, name the 3 to 5 biggest differences
   (missing part, wrong size, wrong place, too faint), fix those in the design file only, run `apply` again. Probe a panel before moving something onto it (`render --probe`), and use the "nearest box" hint when an element is cut off.
   Do not rewrite the whole file between rounds. Finish with `apply --export` and `validate skin`.

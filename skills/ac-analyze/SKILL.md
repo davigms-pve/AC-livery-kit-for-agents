@@ -41,6 +41,8 @@ aclivery brief set <slug> analysis '{"summary":"...","layers":[...],"overlapRule
 - Write the analysis into the brief as the JSON above, one object per layer:
   `{"kind":"tonal-art","what":"grey ink feathers","where":"all body panels","tone":"subtle","confidence":"medium","evidence":"a.jpg left, door and rear quarter","notes":"slightly darker than body, denser near the doors"}`.
   Kinds: `base large-graphic tonal-art accent marking logo text plate`. Tone: `subtle` or `bold`.
+- **Write `where` with the car's own words** (hood, roof, doors, sills, rear, wing, nose, mirrors): `apply`'s review checks that something is placed in each place you name ("claw: hood, roof, doors" fails if the roof has none).
+  Give a design element `"covers": "<word from the layer>"` when its name does not match the layer.
 - **Every layer needs `confidence` and `evidence`** (`brief show` will not move on without them):
   `high` = clearly seen and identified in a photo; `medium` = seen but small or blurred, or identified by shape or context only;
   `low` = a guess. `evidence` names the reference photo and view (and where in it) that shows the layer. If you cannot name a photo, the

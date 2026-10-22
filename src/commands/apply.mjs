@@ -3,7 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import sharp from 'sharp';
 import { parseArgs, UsageError } from '../lib/args.mjs';
-import { loadPack, root } from '../lib/paths.mjs';
+import { loadPack, root, home } from '../lib/paths.mjs';
 import { quiet } from '../lib/quiet.mjs';
 import { run as decal } from './decal.mjs';
 import { run as text, textImage } from './text.mjs';
@@ -54,7 +54,7 @@ const TOP = ['car', 'name', 'brief', 'colors', 'assets', 'textures', 'skin'];
 const ASSET = ['file', 'prep'], PREP = ['crop', 'erase', 'keyBg', 'keyLight', 'tint', 'trim', 'size'];
 const TEXTURE = ['fill', 'base', 'size', 'elements'];
 const TEXT_OPTS = ['ink', 'font', 'bold', 'italic', 'spacing', 'outline'];
-const ELEMENT = ['panel', 'panels', 'pattern', 'density', 'seed', 'image', 'color', 'text', 'at', 'opacity', 'rotate', 'overlap', 'label', 'layer', 'lines', ...TEXT_OPTS];
+const ELEMENT = ['panel', 'panels', 'pattern', 'density', 'seed', 'image', 'color', 'text', 'at', 'opacity', 'rotate', 'overlap', 'label', 'layer', 'covers', 'lines', ...TEXT_OPTS];
 const LINE = ['text', 'at', ...TEXT_OPTS];
 const HEX = /^#[0-9a-f]{6}$/i;
 
@@ -192,6 +192,7 @@ export function validateDesign(d, profile, fileExists = (p) => fs.existsSync(p))
       if (e.opacity !== undefined && !(typeof e.opacity === 'number' && e.opacity >= 0 && e.opacity <= 1)) bad.push(`${where}.opacity: 0..1`);
       if (e.rotate !== undefined && ![0, 90, 180, 270].includes(e.rotate)) bad.push(`${where}.rotate: 0, 90, 180 or 270`);
       if (e.layer !== undefined && !LAYERS.includes(e.layer)) bad.push(`${where}.layer: one of ${LAYERS.join(', ')}`);
+      if (e.covers !== undefined && typeof e.covers !== 'string') bad.push(`${where}.covers: a word or phrase from the analysis layer this element answers`);
       if (e.lines !== undefined) {
         if (e.color === undefined || !Array.isArray(e.lines) || !e.lines.length) bad.push(`${where}.lines: a non-empty list, and only on a color element (a card)`);
         else e.lines.forEach((l, j) => {
@@ -299,6 +300,56 @@ async function prepareAssets(design, dir) {
   return assetFile;
 }
 
+// ---- coverage: does the design answer every layer of the analysis? ---------------------------------------------------------------
+const STOP = new Set(['the', 'and', 'with', 'from', 'that', 'this', 'both', 'all', 'on', 'of', 'in', 'to', 'for', 'a', 'an', 'big', 'small', 'large', 'grey', 'gray', 'white', 'black', 'placeholder', 'generated', 'pattern']);
+const words = (s) => String(s ?? '').toLowerCase().split(/[^a-z0-9]+/).filter((w) => w.length >= 4 && !STOP.has(w));
+/** Location words in an analysis layer's "where", with a test for the car's region names. A region the car does not have is ignored. */
+const PLACES = [
+  ['hood', /\b(hood|bonnet)\b/i, /hood|bonnet/i], ['roof', /\broof\b/i, /roof/i], ['doors', /\b(doors?|sides?|sills?)\b/i, /side|door/i],
+  ['wing', /\b(wing|endplates?|spoiler)\b/i, /wing/i], ['rear', /\b(rear (bumper|deck|window)|tail|deck|diffuser)\b/i, /rear|tail/i],
+  ['nose', /\b(nose|front bumper|splitter|grille)\b/i, /front_bumper|nose|front/i], ['mirrors', /\bmirrors?\b/i, /mirror/i],
+];
+const places = (where) => PLACES.filter(([, inWhere, inRegion]) => inRegion && inWhere.test(String(where ?? ''))).map(([name, , inRegion]) => ({ name, inRegion }));
+const KIND_OK = {
+  logo: (e) => e.image !== undefined || e.text !== undefined, 'large-graphic': (e) => e.image !== undefined, text: (e) => e.text !== undefined,
+  accent: (e) => (e.color !== undefined && e.lines === undefined) || ['splatter', 'brush'].includes(e.pattern), 'tonal-art': (e) => ['ink-lines', 'leaves', 'cracks'].includes(e.pattern), marking: () => true, plate: () => true,
+};
+
+/**
+ * Compare the brief's analysis layers with the design. Returns a list of problems: a layer nothing answers, or a place named in a
+ * layer's "where" (hood, roof, doors, wing, rear, nose, mirrors) that has no matching element. Heuristic: matches words from the layer
+ * against the element's text, image and asset name, label and "covers"; and the panel of each element against the car's regions.
+ */
+export function coverage(design, brief, regions) {
+  const layers = (brief?.analysis?.layers ?? []).map((l, i) => ({ l, i })).filter(({ l }) => l.kind && l.kind !== 'base');
+  if (!layers.length) return [];
+  const items = [];
+  for (const [role, t] of Object.entries(design.textures ?? {})) for (const [i, e] of (t.elements ?? []).entries()) {
+    const panels = e.panel ? [e.panel] : Array.isArray(e.panels) ? e.panels : (e.panels === 'visible' ? ['*'] : []);
+    const hay = [e.text, e.label, e.covers, e.pattern, typeof e.image === 'string' ? e.image : '', typeof e.image === 'string' ? (design.assets?.[e.image]?.file ?? design.assets?.[e.image] ?? '') : '', typeof e.color === 'string' ? e.color : '', ...(e.lines ?? []).map((x) => x.text)].map(String).join(' ').toLowerCase();
+    items.push({ e, role, i, panels, hay });
+  }
+  const regionOf = (name) => (regions?.regions ?? []).filter((r) => (r.panels ?? []).some((p) => p.name === name)).map((r) => r.name);
+  const out = [];
+  for (const { l, i } of layers) {
+    const ok = KIND_OK[l.kind] ?? (() => true);
+    const keys = new Set([...words(l.what), ...words(l.brand)]);
+    const explicit = items.filter((it) => it.e.covers && (String(it.e.covers) === String(i) || [...words(it.e.covers)].some((w) => keys.has(w))));
+    const named = items.filter((it) => ok(it.e) && [...keys].some((k) => it.hay.includes(k)));
+    const mine = explicit.length ? explicit : named.length ? named : items.filter((it) => ok(it.e));
+    const label = `layer ${i} "${String(l.what ?? l.kind).slice(0, 60)}" (${l.kind})`;
+    if (!explicit.length && !named.length && !['tonal-art', 'accent', 'plate', 'marking'].includes(l.kind)) { out.push(`${label}: no element answers it (no text, image name or "covers" matches). Add one, or record a decision in the brief for leaving it out.`); continue; }
+    if (!mine.length) { out.push(`${label}: the design has no element of this kind. Add one, or record a decision for leaving it out.`); continue; }
+    if (l.kind === 'plate') continue;
+    for (const p of places(l.where)) {
+      const here = mine.some((it) => it.panels.includes('*') || it.panels.some((pn) => regionOf(pn).some((r) => p.inRegion.test(r))) || it.role !== 'ext_main');
+      const known = (regions?.regions ?? []).some((r) => p.inRegion.test(r.name));
+      if (known && !here) out.push(`${label} says "${p.name}" but no matching element sits there. Add it, or record a decision.`);
+    }
+  }
+  return out;
+}
+
 const slug = (s) => String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'skin';
 const fmt = (n) => Number(n.toFixed(4));
 
@@ -314,10 +365,14 @@ export async function run(argv) {
   const problems = validateDesign(design, pack.profile);
   if (problems.length) throw new UsageError(`${file}: ${problems.length} problem(s), nothing drawn:\n  - ${problems.join('\n  - ')}`);
   const warnings = designWarnings(design, pack.profile);
+  let brief = null;
+  if (design.brief) { try { brief = JSON.parse(fs.readFileSync(path.join(home(), 'projects', String(design.brief), 'brief.json'), 'utf8')); } catch { /* no such brief: coverage is skipped */ } }
+  const missing = coverage(design, brief, pack.regions);
   const count = Object.values(design.textures).reduce((n, t) => n + t.elements.length, 0);
   if (flags.check) {
     console.log(`design ok: ${Object.keys(design.textures).length} texture(s), ${count} element(s)`);
     for (const w of warnings) console.log(`warning: ${w}`);
+    for (const m of missing) console.log(`missing: ${m}`);
     const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'aclivery-check-'));
     const files = await prepareAssets(design, tmpDir);
     console.log('where each non-tone element lands (size is approximate; "cut off" = part of the box is outside the panel\'s painted island; a door is about 0.5-0.8 m high, a roof edge or window strip is above 0.9 m):');
@@ -433,10 +488,18 @@ export async function run(argv) {
     for (const t of Object.values(design.textures)) for (const e of t.elements) byLayer[layerOf(e)] = (byLayer[layerOf(e)] ?? 0) + 1;
     const rows = await placementTable(design, pack.profile, assetFile);
     const cut = rows.filter((r) => r.includes('cut off')), layers = Object.entries(byLayer).map(([k, n]) => `${k} ${n}`).join(', ');
-    console.log(`review, round ${round}: ${Object.keys(design.textures).length} texture(s) [${Object.keys(design.textures).join(', ')}], elements by layer: ${layers}; ${warnings.length} warning(s), ${cut.length} element(s) cut off`);
+    console.log(`review, round ${round}: ${Object.keys(design.textures).length} texture(s) [${Object.keys(design.textures).join(', ')}], elements by layer: ${layers}; ${warnings.length} warning(s), ${cut.length} element(s) cut off, ${missing.length} layer(s) missing`);
     for (const r of cut) console.log('  fix: ' + r.trim().slice(0, 230));
     for (const w of warnings) console.log('  fix: ' + w.slice(0, 230));
-    if (!flags['no-render']) console.log('  next: open ' + (design.brief ? 'compare.png' : 'sheet.png') + ', name the 3 to 5 biggest differences from the references (a missing part, the wrong size, the wrong place, too faint), change those in the design file, run apply again. Stop when the differences are small, or after 3 rounds.');
+    for (const m of missing) console.log('  missing: ' + m.slice(0, 260));
+    if (brief) {
+      try {   // keep the brief in step with the build
+        const bf = path.join(home(), 'projects', String(design.brief), 'brief.json'), bj = JSON.parse(fs.readFileSync(bf, 'utf8'));
+        bj.build = { design: path.relative(root, path.resolve(file)).replace(/\\\\/g, '/'), round, textures: Object.keys(design.textures), elements: count, missing: missing.length, cutOff: cut.length, at: new Date().toISOString() };
+        fs.writeFileSync(bf, JSON.stringify(bj, null, 1));
+      } catch { /* the brief is optional */ }
+    }
+    if (!flags['no-render']) console.log('  next: open ' + (design.brief ? 'compare.png' : 'sheet.png') + ', first fix every "missing" line (add the element, or record a decision in the brief for leaving it out), then name the 3 to 5 biggest differences from the references (the wrong size, the wrong place, too faint), change those in the design file, run apply again. Stop when the differences are small, or after 3 rounds.');
   }
 
   if (flags.export) {

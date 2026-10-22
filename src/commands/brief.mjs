@@ -83,7 +83,7 @@ export function gaps(b, { packExists = false, fileExists = (p) => fs.existsSync(
   b.elements?.forEach((e, i) => {
     if (!e.target && !e.panel) todo.push({ ask: `Where does "${e.what}" go on the car?`, set: `elements.${i}.target` });
     else if (!e.panel) todo.push({ ask: `Which panel is "${e.what}" (${e.target})?`, do: `aclivery panel regions ${b.car?.id ?? '<car>'}`, set: `elements.${i}.panel` });
-    if (e.asset && !fileExists(e.asset)) todo.push({ ask: `The asset for "${e.what}" is missing (${e.asset}). Provide the file or pick another source.`, do: 'skills/ac-logos' });
+    if (e.asset && !/^pattern/i.test(e.asset) && !fileExists(e.asset)) todo.push({ ask: `The asset for "${e.what}" is missing (${e.asset}). Provide the file or pick another source.`, do: 'skills/ac-logos' });
     else if (!e.asset && e.needsAsset !== false && /logo|wordmark|sponsor|art|decal/i.test(e.what)) todo.push({ ask: `"${e.what}" needs an image file. Do you have one, or may I search for the brand's official or vector file and propose a download for you to approve?`, set: `elements.${i}.asset` });
   });
   if (b.elements?.length && /number/i.test(JSON.stringify(b.elements)) && !b.driver?.number) todo.push({ ask: 'What is the car number?', set: 'driver.number' });
@@ -132,6 +132,7 @@ export async function run(argv) {
     console.log(`${b.title}  [${slug}]`);
     console.log(`  car: ${b.car?.id ?? '?'}${b.car?.id ? (packExists ? '  (car pack ready)' : '  (no car pack yet)') : ''}   base: ${baseColourOf(b) ?? '?'}   driver: ${b.driver?.name ?? '?'} #${b.driver?.number ?? '?'}`);
     console.log(`  references: ${b.references?.length ?? 0}   analysis: ${b.analysis ? (b.analysis.layers?.length ?? 0) + ' layers' : 'not done'}   elements: ${b.elements?.length ?? 0}   decisions: ${b.decisions?.length ?? 0}`);
+    if (b.build) console.log(`  built: round ${b.build.round}, ${b.build.elements} element(s) in ${b.build.design}, ${b.build.missing} layer(s) missing, ${b.build.cutOff} cut off  (the design file, not this list, is the source of truth)`);
     for (const [i, r] of (b.references ?? []).entries()) console.log(`    ref ${i}. ${path.basename(r.file ?? '?')}  view: ${r.view ?? '?'}${r.notes ? '  ' + r.notes : ''}`);
     for (const [i, e] of (b.elements ?? []).entries()) console.log(`    ${i}. ${e.what}  ->  ${e.panel ?? e.target ?? '?'}  [${e.status ?? 'idea'}]${e.asset ? '  ' + path.basename(e.asset) : ''}`);
     if (!todo.length) { console.log('\nNothing missing. Ship it: aclivery export, then check in Content Manager.'); return 0; }
