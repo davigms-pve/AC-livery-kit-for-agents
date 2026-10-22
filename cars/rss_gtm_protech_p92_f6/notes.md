@@ -116,6 +116,10 @@ Regions (hand-drawn boxes by the user, aligned with the profile): 1 front_bumper
 - **Roof `centre_mid` upright frame:** text drawn upright reads correctly for someone at the car's LEFT side looking across (its "up" is toward the car's RIGHT, x runs front to rear). A logo meant to run along the car
   with its wide end to the rear needs `rotate: 90`.
 
+## First in-game check (owner's screenshot, 2026-10-22, Opus build)
+
+- Verified from one screenshot: the 5 textures load (body, banner, glass, grille not seen, door plates not seen). The tonal art is nearly invisible in the game's lighting and the cyan looks paler than in our render: our renderer has no real lighting, so do not tune the art by it alone. The DELS 71 plate card and the door claw were not visible on the door in that view: unresolved, needs closer shots.
+
 ## German flag and the quarter window (2026-10-22)
 
 - The small German flag sits in the rear-quarter window, not on the roof strip. On `glass_2` (`whole`) the three stripes are stacked along the texture's **x** (each `0.010` wide, `0.052` long, starting `at [0.092, 0.20]`: black, red, gold): the texture's y runs left-right on the car,
