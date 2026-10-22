@@ -116,7 +116,7 @@ export function gaps(b, { packExists = false, fileExists = (p) => fs.existsSync(
       for (const { l, i } of live) {
         if (l.source === 'skip' && !String(l.why ?? '').trim()) todo.push({ ask: null, do: `layer ${i} "${l.what}" is marked skip: say why (analysis.layers.${i}.why) and add it to decisions`, set: `analysis.layers.${i}.why` });
         if (l.source === 'fetch' && (!l.asset || /placeholder/i.test(String(l.asset)) || !fileExists(l.asset))) {
-          todo.push({ ask: null, do: `layer ${i} "${l.what}" is a brand mark to FETCH, not redraw. 1) look in assets/logos (aclivery logo inspect <file>) for the brand's file; 2) cut the mark out of it (logo prep --crop --erase --key-bg or --key-light --tint --trim, skill ac-logos); 3) set analysis.layers.${i}.asset to the prepared file. If no file exists, ask the user which source to download from (name URL, host, type) and wait for the yes. A placeholder is only allowed when the user says so.`, set: `analysis.layers.${i}.asset` });
+          todo.push({ ask: null, do: `layer ${i} "${l.what}" is a brand mark to FETCH, not redraw. 1) look in assets/logos (aclivery logo inspect <file>) for the brand's file; 2) cut the mark out of it (logo prep --crop --erase --key-bg or --key-light --tint --trim, skill ac-logos); 3) set analysis.layers.${i}.asset to the prepared file. If no file exists, ask the user which source to download from (name URL, host, type) and wait for the yes. A placeholder is only allowed when the user says so. The search procedure is at the top of skill ac-logos.`, set: `analysis.layers.${i}.asset` });
         }
       }
       const pending = todo.some((t) => /to FETCH|marked skip/.test(t.do ?? ''));

@@ -7,6 +7,16 @@ license: PolyForm-Noncommercial-1.0.0
 
 # Logos
 
+## How to find a brand's real file (the order to follow; the learning log is `docs/research/brand-marks.md`)
+
+1. **Look locally**: `ls assets/logos`, `aclivery logo inspect <file>`. The mark may sit inside a lockup file and only need cutting.
+2. **Search the web** (if you have a search tool) for the mark by name and format, in more than one phrasing; prefer the brand's own press kit, then a logo library (SeekLogo, VectorSeek, CDNLogo).
+3. **Propose ONE candidate** to the user: page URL, the direct file URL exactly as it appears in the page (never guess one), host, file type, size, licence note, and what you could NOT confirm.
+4. **Wait for the yes**, then `logo fetch <url> --name <name> --yes`.
+5. **Look at the picture** before building on it (a title can lie: "Monster claws" was a green monster hand). Wrong picture: delete the file and its `manifest.json` entry, say so, propose the next candidate.
+6. **Prepare it** (`logo prep`), set the brief layer's `asset`, and **write the source and its problems** in the livery's `assets.md` and the lesson in `docs/research/brand-marks.md`.
+7. No web search, or nothing found: ask the user for the file. Never fill the gap with a redrawn mark unless the user says so.
+
 ```
 aclivery logo fetch <https url> --name monster          # prints a plan, exits 2: nothing downloaded yet
 aclivery logo fetch <https url> --name monster --yes    # only after the user said yes
