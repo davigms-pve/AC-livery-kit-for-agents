@@ -119,6 +119,28 @@
      "overlap": true
     },
     {
+     "panel": "left_front_upper",
+     "color": "carbon",
+     "at": [
+      0.15,
+      0.4,
+      0.7,
+      0.45
+     ],
+     "overlap": true
+    },
+    {
+     "panel": "right_front_upper",
+     "color": "carbon",
+     "at": [
+      0.15,
+      0.4,
+      0.7,
+      0.45
+     ],
+     "overlap": true
+    },
+    {
      "panel": "centre_tail_upper_4",
      "color": "carbon",
      "overlap": true
