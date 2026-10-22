@@ -90,3 +90,10 @@ Regions (hand-drawn boxes by the user, aligned with the profile): 1 front_bumper
 - **Wing `centre_tail`** (rotation 0; the metres in the profile are about 1.75x too big for it, but the mapping is uniform): in the upright frame x = across the chord, y = along the span from the car's RIGHT end (0) to its LEFT.
   The TOP surface is the right half of the panel (x 0.5-1.0, x 0.5 = leading edge side); the left half is the underside and trailing parts. Along-the-span lettering needs `rotate: 90` (tops toward the rear), and then `at` is in the
   rotated frame: `[0.12, 0.05, 0.76, 0.40]` puts the stacked lockup (about 1.0 x 0.34 m) on the top surface; claws at `[0.03, 0.10, 0.09, 0.30]` and `[0.88, 0.10, 0.09, 0.30]`. PORSCHE on the underside (`[0.10, 0.53, 0.80, 0.44]`) is a guess: the underside was only seen in a reflection.
+
+## More verified layout facts (2026-10-22)
+
+- **Front centre grille = `Le_God_Grille.dds`** (role `le_god_grille`, panel `whole`): text drawn upright shows upright in the front centre intake (the DELS strip). The model embeds 128x32; a design can give it a larger size with the same 4:1 aspect (`size: "1024x256"`).
+- **Rear window banner:** on `glass_2` the rear window is columns D-I, rows 1-6 of a 12x12 grid (about `at [0.25, 0, 0.5, 0.5]` of `whole`); art reads left to right seen from behind, with the tops of the letters toward the front of the car.
+- **Sill:** `left_rear`/`right_rear` lower strip: a black band `at [0, 0.82, 0.5, 0.12]` (right side `[0.5, ...]`) with a cyan underline at y 0.94 holds the white POTTSPEED lettering.
+- Placeholders used by draft 3: `examples/rss-p92-thiele71/make_claw.mjs` (three ragged scratch marks) and `make_emblem.mjs` (cyan disc "SC 1919"): neither is the real artwork.

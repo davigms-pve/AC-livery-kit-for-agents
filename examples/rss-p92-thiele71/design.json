@@ -35,7 +35,34 @@
     "tint": "#2a2a2a",
     "trim": true
    }
-  }
+  },
+  "monster_top": {
+   "file": "assets/logos/monster.png",
+   "prep": {
+    "crop": [
+     0,
+     0,
+     1,
+     0.7
+    ],
+    "keyLight": true,
+    "trim": true
+   }
+  },
+  "monster_mark": {
+   "file": "assets/logos/monster.png",
+   "prep": {
+    "crop": [
+     0,
+     0,
+     1,
+     0.55
+    ],
+    "keyLight": true,
+    "trim": true
+   }
+  },
+  "sc_disc": "assets/logos/sc_disc_placeholder.png"
  },
  "textures": {
   "ext_main": {
@@ -52,16 +79,18 @@
       "right_rear",
       "centre_front"
      ],
-     "density": 0.7,
+     "density": 1,
      "seed": 11,
-     "color": "#80848a",
-     "opacity": 0.85
+     "color": "#74787e",
+     "opacity": 0.9
     },
     {
      "pattern": "ink-lines",
      "panels": "visible",
-     "density": 0.8,
-     "seed": 7
+     "density": 0.9,
+     "seed": 7,
+     "color": "#55585d",
+     "opacity": 0.85
     },
     {
      "pattern": "cracks",
@@ -148,10 +177,10 @@
      "panel": "centre_front",
      "image": "claw",
      "at": [
+      0.34,
+      0.18,
       0.32,
-      0.22,
-      0.36,
-      0.46
+      0.42
      ]
     },
     {
@@ -189,16 +218,6 @@
      ]
     },
     {
-     "panel": "centre_front",
-     "image": "monster",
-     "at": [
-      0.3,
-      0.7,
-      0.4,
-      0.26
-     ]
-    },
-    {
      "panel": "centre_nose",
      "image": "porsche",
      "at": [
@@ -216,16 +235,6 @@
       0.08,
       0.18,
       0.36
-     ]
-    },
-    {
-     "panel": "centre_tail_upper",
-     "image": "monster",
-     "at": [
-      0.38,
-      0.06,
-      0.24,
-      0.44
      ]
     },
     {
@@ -283,32 +292,6 @@
       0.58,
       0.24,
       0.2
-     ]
-    },
-    {
-     "panel": "left_rear",
-     "text": "POTTSPEED",
-     "ink": "#222222",
-     "bold": true,
-     "italic": true,
-     "at": [
-      0.02,
-      0.84,
-      0.46,
-      0.12
-     ]
-    },
-    {
-     "panel": "right_rear",
-     "text": "POTTSPEED",
-     "ink": "#222222",
-     "bold": true,
-     "italic": true,
-     "at": [
-      0.52,
-      0.84,
-      0.46,
-      0.12
      ]
     },
     {
@@ -444,6 +427,341 @@
       0.3,
       0.3
      ]
+    },
+    {
+     "pattern": "leaves",
+     "panels": [
+      "centre_tail"
+     ],
+     "density": 0.5,
+     "seed": 31,
+     "color": "#74787e",
+     "opacity": 0.9
+    },
+    {
+     "pattern": "brush",
+     "panels": [
+      "left_front",
+      "right_front",
+      "left_rear",
+      "right_rear"
+     ],
+     "density": 0.4,
+     "seed": 41
+    },
+    {
+     "panel": "left_rear",
+     "color": "#111111",
+     "at": [
+      0,
+      0.82,
+      0.5,
+      0.12
+     ]
+    },
+    {
+     "panel": "left_rear",
+     "color": "cyan",
+     "at": [
+      0,
+      0.94,
+      0.5,
+      0.02
+     ]
+    },
+    {
+     "panel": "right_rear",
+     "color": "#111111",
+     "at": [
+      0.5,
+      0.82,
+      0.5,
+      0.12
+     ]
+    },
+    {
+     "panel": "right_rear",
+     "color": "cyan",
+     "at": [
+      0.5,
+      0.94,
+      0.5,
+      0.02
+     ]
+    },
+    {
+     "panel": "left_rear",
+     "text": "POTTSPEED",
+     "ink": "#ffffff",
+     "bold": true,
+     "italic": true,
+     "at": [
+      0.03,
+      0.83,
+      0.44,
+      0.1
+     ],
+     "overlap": true
+    },
+    {
+     "panel": "right_rear",
+     "text": "POTTSPEED",
+     "ink": "#ffffff",
+     "bold": true,
+     "italic": true,
+     "at": [
+      0.53,
+      0.83,
+      0.44,
+      0.1
+     ],
+     "overlap": true
+    },
+    {
+     "panel": "centre_front",
+     "image": "monster_top",
+     "at": [
+      0.3,
+      0.74,
+      0.4,
+      0.14
+     ]
+    },
+    {
+     "panel": "centre_front",
+     "text": "ABSOLUTELY ZERO",
+     "ink": "#777777",
+     "bold": true,
+     "spacing": 30,
+     "at": [
+      0.31,
+      0.89,
+      0.38,
+      0.05
+     ]
+    },
+    {
+     "panel": "centre_tail_upper",
+     "image": "monster_top",
+     "at": [
+      0.38,
+      0.06,
+      0.24,
+      0.26
+     ]
+    },
+    {
+     "panel": "centre_tail_upper",
+     "text": "ABSOLUTELY ZERO",
+     "ink": "#777777",
+     "bold": true,
+     "spacing": 30,
+     "at": [
+      0.39,
+      0.34,
+      0.22,
+      0.07
+     ]
+    },
+    {
+     "panel": "centre_tail_upper",
+     "color": "#e08a1e",
+     "at": [
+      0.315,
+      0.14,
+      0.055,
+      0.2
+     ]
+    },
+    {
+     "panel": "centre_tail_upper",
+     "color": "#ffffff",
+     "at": [
+      0.32,
+      0.17,
+      0.045,
+      0.14
+     ],
+     "overlap": true
+    },
+    {
+     "panel": "centre_tail_upper",
+     "text": "AM",
+     "ink": "#e08a1e",
+     "bold": true,
+     "at": [
+      0.322,
+      0.19,
+      0.04,
+      0.1
+     ],
+     "overlap": true
+    },
+    {
+     "panel": "centre_tail_upper",
+     "text": "TOW",
+     "ink": "#d62828",
+     "bold": true,
+     "at": [
+      0.8,
+      0.62,
+      0.06,
+      0.14
+     ]
+    },
+    {
+     "panel": "centre_nose",
+     "text": "TOW",
+     "ink": "#d62828",
+     "bold": true,
+     "at": [
+      0.655,
+      0.05,
+      0.04,
+      0.12
+     ]
+    },
+    {
+     "panel": "centre_nose",
+     "image": "sc_disc",
+     "at": [
+      0.12,
+      0.52,
+      0.08,
+      0.42
+     ]
+    },
+    {
+     "panel": "centre_nose",
+     "image": "sc_disc",
+     "at": [
+      0.8,
+      0.52,
+      0.08,
+      0.42
+     ]
+    },
+    {
+     "panel": "left_rear",
+     "image": "sc_disc",
+     "at": [
+      0.74,
+      0.36,
+      0.08,
+      0.2
+     ]
+    },
+    {
+     "panel": "right_rear",
+     "image": "sc_disc",
+     "at": [
+      0.18,
+      0.36,
+      0.08,
+      0.2
+     ]
+    },
+    {
+     "panel": "left_mid",
+     "text": "sc-hassel1919.de",
+     "ink": "#333333",
+     "at": [
+      0.02,
+      0.8,
+      0.28,
+      0.07
+     ]
+    },
+    {
+     "panel": "right_mid",
+     "text": "sc-hassel1919.de",
+     "ink": "#333333",
+     "at": [
+      0.7,
+      0.8,
+      0.28,
+      0.07
+     ]
+    },
+    {
+     "panel": "left_mid",
+     "text": "Digitale Eifel Langstrecken Serie",
+     "ink": "#333333",
+     "at": [
+      0.55,
+      0.8,
+      0.3,
+      0.05
+     ]
+    },
+    {
+     "panel": "right_mid",
+     "text": "Digitale Eifel Langstrecken Serie",
+     "ink": "#333333",
+     "at": [
+      0.15,
+      0.8,
+      0.3,
+      0.05
+     ]
+    },
+    {
+     "panel": "centre_tail",
+     "color": "cyan",
+     "at": [
+      0.5,
+      0.02,
+      0.035,
+      0.96
+     ]
+    },
+    {
+     "panel": "left_tail",
+     "image": "monster_mark",
+     "at": [
+      0.1,
+      0.3,
+      0.8,
+      0.22
+     ],
+     "overlap": true
+    },
+    {
+     "panel": "left_tail",
+     "text": "ZERO ULTRA",
+     "ink": "#10333a",
+     "bold": true,
+     "at": [
+      0.18,
+      0.56,
+      0.64,
+      0.09
+     ],
+     "overlap": true
+    },
+    {
+     "panel": "right_tail",
+     "image": "monster_mark",
+     "at": [
+      0.1,
+      0.3,
+      0.8,
+      0.22
+     ],
+     "overlap": true
+    },
+    {
+     "panel": "right_tail",
+     "text": "ZERO ULTRA",
+     "ink": "#10333a",
+     "bold": true,
+     "at": [
+      0.18,
+      0.56,
+      0.64,
+      0.09
+     ],
+     "overlap": true
     }
    ]
   },
@@ -589,6 +907,75 @@
       0.07,
       0.19,
       0.46
+     ],
+     "overlap": true
+    },
+    {
+     "panel": "whole",
+     "color": "#ffffff",
+     "opacity": 0.5,
+     "at": [
+      0.27,
+      0.03,
+      0.46,
+      0.44
+     ],
+     "overlap": true
+    },
+    {
+     "panel": "whole",
+     "text": "DELS",
+     "ink": "#111111",
+     "bold": true,
+     "at": [
+      0.31,
+      0.07,
+      0.38,
+      0.2
+     ],
+     "overlap": true
+    },
+    {
+     "panel": "whole",
+     "text": "Digitale Eifel Langstrecken Serie",
+     "ink": "#111111",
+     "at": [
+      0.31,
+      0.3,
+      0.38,
+      0.05
+     ],
+     "overlap": true
+    }
+   ]
+  },
+  "le_god_grille": {
+   "fill": "#15181b",
+   "size": "1024x256",
+   "elements": [
+    {
+     "panel": "whole",
+     "text": "DELS",
+     "ink": "#6b7078",
+     "bold": true,
+     "at": [
+      0.28,
+      0.1,
+      0.44,
+      0.52
+     ],
+     "overlap": true
+    },
+    {
+     "panel": "whole",
+     "text": "ZERO ULTRA",
+     "ink": "#4ec4d6",
+     "bold": true,
+     "at": [
+      0.34,
+      0.7,
+      0.32,
+      0.18
      ],
      "overlap": true
     }

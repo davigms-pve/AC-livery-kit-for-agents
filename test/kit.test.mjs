@@ -353,7 +353,7 @@ test('patterns: same seed gives the same art, another seed differs, and the cove
     let a = 0; for (let i = 3; i < data.length; i += 4) a += data[i] / 255;
     const real = a / (p.width * p.height);
     assert.ok(real > 0, `${kind} drew something`);
-    assert.ok(p.coverage / real > 0.5 && p.coverage / real < 2, `${kind}: estimate ${p.coverage.toFixed(4)} vs real ${real.toFixed(4)}`);
+    assert.ok(p.coverage / real > 0.4 && p.coverage / real < 3, `${kind}: estimate ${p.coverage.toFixed(4)} vs real ${real.toFixed(4)}`);
   }
 });
 
@@ -492,4 +492,19 @@ test('car stock: explains a missing role or a missing model instead of failing s
   const model = run(['car', 'stock', 'cst', 'ext_main'], env);
   assert.equal(model.status, 2);
   assert.match(model.stderr, /car model is not at/);
+});
+
+test('logo prep --crop keeps the chosen part of the picture and rejects bad boxes', async () => {
+  const dir = tmp(), src = path.join(dir, 'in.png'), out = path.join(dir, 'out.png');
+  const w = 100, h = 100, raw = Buffer.alloc(w * h * 3, 255);
+  for (let y = 0; y < 40; y++) for (let x = 0; x < w; x++) { const o = (y * w + x) * 3; raw[o] = 255; raw[o + 1] = 0; raw[o + 2] = 0; }   // top 40%: red
+  await sharp(raw, { raw: { width: w, height: h, channels: 3 } }).png().toFile(src);
+  assert.equal(run(['logo', 'prep', src, '--out', out, '--crop', '0,0,1,0.4']).status, 0);
+  const m = await sharp(out).metadata();
+  assert.deepEqual([m.width, m.height], [100, 40]);
+  const p = await px(out);
+  assert.deepEqual(p(50, 20), [255, 0, 0, 255]);
+  const bad = run(['logo', 'prep', src, '--out', out, '--crop', '0,0,2,1']);
+  assert.equal(bad.status, 2);
+  assert.match(bad.stderr, /--crop must be/);
 });

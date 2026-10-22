@@ -51,7 +51,7 @@ export const help = `aclivery apply <design.json> [--out dir] [--check] [--no-re
 
 const LAYERS = ['tone', 'paint', 'logo', 'text'];
 const TOP = ['car', 'name', 'brief', 'colors', 'assets', 'textures', 'skin'];
-const ASSET = ['file', 'prep'], PREP = ['keyBg', 'keyLight', 'tint', 'trim', 'size'];
+const ASSET = ['file', 'prep'], PREP = ['crop', 'keyBg', 'keyLight', 'tint', 'trim', 'size'];
 const TEXTURE = ['fill', 'base', 'size', 'elements'];
 const TEXT_OPTS = ['ink', 'font', 'bold', 'italic', 'spacing', 'outline'];
 const ELEMENT = ['panel', 'panels', 'pattern', 'density', 'seed', 'image', 'color', 'text', 'at', 'opacity', 'rotate', 'overlap', 'label', 'layer', 'lines', ...TEXT_OPTS];
@@ -125,6 +125,7 @@ export function validateDesign(d, profile, fileExists = (p) => fs.existsSync(p))
       else {
         unknown(`assets.${name}.prep`, a.prep, PREP);
         if (a.prep.tint !== undefined && !HEX.test(a.prep.tint)) bad.push(`assets.${name}.prep.tint: not a hex colour`);
+        if (a.prep.crop !== undefined && !(Array.isArray(a.prep.crop) && a.prep.crop.length === 4 && a.prep.crop.every((n) => typeof n === 'number'))) bad.push(`assets.${name}.prep.crop: [x, y, w, h] as fractions`);
       }
     }
   }
@@ -268,6 +269,7 @@ async function prepareAssets(design, dir) {
     const a = typeof a0 === 'string' ? { file: a0 } : a0, src = path.resolve(root, a.file);
     if (!a.prep) { assetFile[aName] = src; continue; }
     const dst = path.join(dir, `${aName}.png`), args = ['prep', src, '--out', dst];
+    if (a.prep.crop) args.push('--crop', a.prep.crop.join(','));
     if (a.prep.keyBg) args.push('--key-bg');
     if (a.prep.keyLight) args.push('--key-light');
     if (a.prep.tint) args.push('--tint', a.prep.tint);

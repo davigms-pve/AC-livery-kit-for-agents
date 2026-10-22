@@ -102,9 +102,38 @@ artwork). Treat it as a required layer, not a missing asset. Logos must not over
   cyan solids incl. splitter/diffuser edges, claw and lockup on doors/hood/roof (placeholder claw), DELS cards, lower-door DELS, POTTSPEED on the sills, windshield banner with the stock markings kept. Verified: builds, validates, DDS OK. Not verified in the game.
   Added after the probes: Monster lockup on the hood nose, PORSCHE on the bumper cover, MOTUL / lockup / pink 71 / GoPro on the rear bumper, "PAPA'S HOUSE OF GAME" on the deck (see the car notes for the layouts).
   Added: driver name + flag on the roof-edge strips, black rear-quarter windows (shared glass texture, `car stock` to get the stock base), the lockup and claws along the wing top.
-  Open: rear window banner (the rear-window region of `glass_2` is not mapped yet), black sill band, SC Hassel discs, DELS dot-matrix splitter, the real claw and lockup colourways (B2/B18), roses, creature art on wing tips, AM tag, TOW arrows.
+  (Rescan 2026-10-22: see the gap map below; the open list here is superseded.)
+  Older open list: rear window banner, black sill band, SC Hassel discs, DELS dot-matrix splitter, the real claw and lockup colourways (B2/B18), roses, creature art on wing tips, AM tag, TOW arrows.
 - [x] **Decal rotation bug** (non-square images on 90/270 panels were squashed/cropped; fixed with a test), **`apply --check` island coverage** ("cut off" warnings), **`logo prep --key-light`** (baked checkerboards).
 - [x] **`aclivery car stock`**: saves the car's own copy of a texture (e.g. the glass) to use as a design's `"base"`.
+- [~] **Gap map after the rescan (2026-10-22)**, against the 22 layers of the 15-photo analysis (`docs/research/reference-views.md`). Done = in draft 3 and seen in a render; none checked in the game.
+
+  | Layer | Status | What is left |
+  |---|---|---|
+  | Base near-white | done | |
+  | Leaves (grey plumes) | partial | generated leaf clusters are paler and more regular than the originals; real art needed for the look (B2/B18) |
+  | Thorny vines with roses | partial | generated, thin, with rose buds; the originals are bolder |
+  | Crack network (roof) | partial | generated, faint |
+  | Cyan blots / brush strokes | done (generated) | positions are random, not copied |
+  | Cyan solids (mirrors, endplates, splitter and diffuser edges, sill underline) | done | |
+  | Claw (hood, roof, doors, wing ends) | placeholder | real claw art; the roof claw should be much larger |
+  | Claw as dots on the endplate | not done | a perforation-dot version |
+  | Monster lockup (ULTRA / ABSOLUTELY ZERO / ZERO ULTRA colourways) | done (cut from the one logo file) | the originals are grey-filled on the rear and nose |
+  | DELS card, lower-door DELS, small print | done | exact font of the 71 |
+  | DELS rear window banner | done | glass texture, translucent white |
+  | DELS front grille | done (plain text) | dot-matrix look |
+  | POTTSPEED sills, black band, cyan underline | done | |
+  | PORSCHE bumper, crests | partial | the small crests on the nose and fender are not placed |
+  | Rear sponsors (MOTUL, GoPro, AM tag, pink 71, TOW) | done | AM tag and TOW are drawn, not the real stickers |
+  | Papa's House of Game | done | mostly hidden behind the wing |
+  | Driver name + flag | done (roof-edge strips) | the references put it in the black quarter window; shared mirrored texels prevent that |
+  | Windshield banner | done | the cyan pixel-digit box and the GT logos |
+  | SC Hassel 1919 discs | placeholder | real emblem |
+  | Neutral/Extinguisher markings | done (stock sticker sheet kept) | |
+  | Vertical MONSTER on the pillar | not done | |
+  | Wing underside lettering, creature art on the tips | guess / not done | |
+  | Tyre lettering | out of scope (stock tyre) | |
+
 - [ ] **B24 Number and lettering styles.** Made-up number styles: match from a short list of free fonts tagged by style (italic, condensed, brush, stencil) via `text --font`, rather than freehand redrawing.
   Unverified first: whether the renderer on Windows can use a font file that is not installed (else convert text to paths). Bundling fonts needs the owner's yes, a licence check and a NOTICE line.
 - [ ] **B25 Free art sources.** Optional later: CC0 motif/shape libraries (consent per download, licence note per file). Logos stay local, personal use, consent only. Procedural patterns (B17) cover tonal art without downloads.

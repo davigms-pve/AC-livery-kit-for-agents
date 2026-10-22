@@ -17,7 +17,7 @@ export const DEFAULTS = {
 /** What "discreet" means for tonal art, so `apply --check` can warn. Heuristics: the owner's eye is the real test. */
 export const DEFAULT_DENSITY = 0.8;
 export const DISCREET = {
-  'ink-lines': { strokeContrast: 0.3, meanShift: 0.03 },
+  'ink-lines': { strokeContrast: 0.55, meanShift: 0.03 },   // thin dark vines read as discreet when they cover little (the references use dark thin lines)
   leaves: { strokeContrast: 0.45, meanShift: 0.06 },   // big soft shapes: allowed to be bolder and cover more
   cracks: { strokeContrast: 0.35, meanShift: 0.02 },
 };
@@ -47,6 +47,13 @@ function inkLines(W, H, density, rnd) {
     paths.push(`<path d="M${f(x)} ${f(y)}Q${f(mx + px)} ${f(my + py)} ${f(tx)} ${f(ty)}Q${f(mx - px)} ${f(my - py)} ${f(x)} ${f(y)}Z" stroke-width="${f(w)}"/>`);
     ink += 2.1 * L * w;
   };
+  // A small rose bud: a tight spiral, like the ones on the thorny vines.
+  const rose = (x, y, r, w) => {
+    const pts = [];
+    for (let i = 0; i <= 14; i++) { const k = i / 14, a = k * 5.2 + rnd() * 0.2, rr = r * (0.15 + 0.85 * k); pts.push([x + Math.cos(a) * rr, y + Math.sin(a) * rr]); }
+    stroke(pts, w * 0.7);
+    for (const s of [-1, 1]) leaf(x, y, (s > 0 ? 0.6 : 2.6) + rnd() * 0.6, r * 1.6, w * 0.5);
+  };
   const vine = (x, y, a, L, w, depth) => {
     const step = 0.02, n = Math.max(3, Math.round(L / step)), pts = [[x, y]], angs = [a];
     let vel = 0;
@@ -56,6 +63,7 @@ function inkLines(W, H, density, rnd) {
     for (let i = 3; i < n - 1; i++) {
       const side = rnd() < 0.5 ? -1 : 1;
       if (depth < 2 && rnd() < 0.09) vine(pts[i][0], pts[i][1], angs[i] + side * (0.7 + rnd() * 0.5), L * (0.25 + rnd() * 0.2), w * 0.7, depth + 1);
+      else if (depth === 0 && rnd() < 0.07) rose(pts[i][0] + Math.cos(angs[i] + side * 1.5) * 0.012, pts[i][1] + Math.sin(angs[i] + side * 1.5) * 0.012, 0.012 + rnd() * 0.01, w);
       else if (rnd() < 0.12) leaf(pts[i][0], pts[i][1], angs[i] + side * (0.9 + rnd() * 0.5), 0.025 + rnd() * 0.025, w * 0.6);
     }
   };

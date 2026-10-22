@@ -7,8 +7,9 @@ import { root } from '../lib/paths.mjs';
 
 export const help = `aclivery logo fetch <url> --name <name> [--yes]   download one logo into assets/logos/ (asks first)
 aclivery logo inspect <file>                        size, transparency, background, and quality warnings
-aclivery logo prep <in> --out <png> [--key-bg | --key-light] [--tint #RRGGBB] [--trim] [--size 2000]
+aclivery logo prep <in> --out <png> [--crop x,y,w,h] [--key-bg | --key-light] [--tint #RRGGBB] [--trim] [--size 2000]
     --key-bg  turn a near-uniform background (taken from the corners) transparent
+    --crop    keep only part of the picture, as fractions x,y,w,h (for example 0,0,1,0.62 keeps the top 62%: the MONSTER and ENERGY rows of a lockup)
     --key-light  make light neutral pixels (white, light grey) transparent: for logos with a baked-in checkerboard or a light backdrop that is not one flat colour.
               Coloured and dark parts stay; light edges become semi-transparent. Check the result on a dark background.
     --tint    recolour every opaque pixel, keeping the shape (for one-colour decals)
@@ -119,7 +120,14 @@ async function prep(file, flags) {
   let img = kind === 'svg' ? sharp(buf, { density: 300 }) : sharp(buf);
   if (kind === 'svg' && size) img = img.resize({ width: size, height: size, fit: 'inside' });
   let { data, info } = await img.ensureAlpha().raw().toBuffer({ resolveWithObject: true });
-  const { width: w, height: h } = info;
+  let { width: w, height: h } = info;
+  if (flags.crop) {
+    const c = String(flags.crop).split(',').map(Number);
+    if (c.length !== 4 || c.some((n) => Number.isNaN(n)) || c[2] <= 0 || c[3] <= 0 || c[0] < 0 || c[1] < 0 || c[0] + c[2] > 1.0001 || c[1] + c[3] > 1.0001) throw new UsageError('--crop must be x,y,w,h fractions inside the picture, like 0,0,1,0.62');
+    const [cx, cy, cw, ch] = [Math.round(c[0] * w), Math.round(c[1] * h), Math.max(1, Math.round(c[2] * w)), Math.max(1, Math.round(c[3] * h))];
+    const cropped = await sharp(data, { raw: { width: w, height: h, channels: 4 } }).extract({ left: cx, top: cy, width: Math.min(cw, w - cx), height: Math.min(ch, h - cy) }).raw().toBuffer({ resolveWithObject: true });
+    data = cropped.data; w = cropped.info.width; h = cropped.info.height;
+  }
 
   if (flags['key-bg']) {
     const bg = await backgroundInfo(sharp(data, { raw: { width: w, height: h, channels: 4 } }), w, h);
