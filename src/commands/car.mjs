@@ -4,7 +4,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { parseArgs, UsageError } from '../lib/args.mjs';
-import { packDir, root } from '../lib/paths.mjs';
+import { packDir, root, loadPack } from '../lib/paths.mjs';
 import { readModel, liverykitCli, liverykitVersion, measureTextureUsage } from '../engine.mjs';
 
 export const help = `aclivery car prep <car.kn5> [--car-id id] [--skins dir] [--psd EXT_Main.psd] [--regions panel_map.json]
@@ -14,7 +14,9 @@ export const help = `aclivery car prep <car.kn5> [--car-id id] [--skins dir] [--
 aclivery car info <car-id>      what a prepared pack contains
 aclivery car notes <car-id>     facts we already know about this car (panels, textures, pitfalls): read before starting
 aclivery car size <car-id> <texture-role> <WxH>   record a texture's real size when the model only has a low-res copy
-  (e.g. door_plates 2048x640 from the modder's PSD). Panels are UV fractions, so this only fixes the canvas aspect ratio.`;
+  (e.g. door_plates 2048x640 from the modder's PSD). Panels are UV fractions, so this only fixes the canvas aspect ratio.
+aclivery car stock <car-id> <texture-role> [--out file.dds]   save the car's own copy of a texture (default assets/stock/<file>.dds), to use as a design's "base"
+  (it keeps the stock tint, stickers and cut-outs). Reads the model once; the file is the modder's work, so it stays local and is never committed.`;
 
 const sha1 = (file) => crypto.createHash('sha1').update(fs.readFileSync(file)).digest('hex');
 
@@ -28,6 +30,7 @@ export async function run(argv) {
     console.log(fs.readFileSync(f, 'utf8')); return 0;
   }
   if (sub === 'size') return setSize(target, positional[2], positional[3]);
+  if (sub === 'stock') return stock(target, positional[2], flags);
   if (sub !== 'prep' || !target) throw new UsageError(help);
 
   const kn5 = path.resolve(target);
@@ -108,6 +111,23 @@ export async function run(argv) {
 
   const total = Object.values(index.textures).reduce((n, t) => n + t.panels, 0);
   console.log(`pack written: ${dir}\n  ${Object.keys(index.textures).length} textures, ${total} panels`);
+  return 0;
+}
+
+async function stock(carId, role, flags) {
+  if (!carId || !role) throw new UsageError(help);
+  const pack = loadPack(carId);
+  const tex = pack.profile.textures?.[role];
+  if (!tex) throw new UsageError(`no texture role "${role}". Try: aclivery panel textures ${carId}`);
+  const kn5 = pack.meta?.kn5;
+  if (!kn5 || !fs.existsSync(kn5)) throw new UsageError(`the car model is not at ${kn5}. Re-run: aclivery car prep <kn5>`);
+  const model = await readModel(kn5, { textures: true });
+  const found = (model.textures ?? []).find((x) => x.name.toLowerCase() === tex.file.toLowerCase());
+  if (!found?.data) throw new UsageError(`the model does not embed ${tex.file}`);
+  const out = path.resolve(flags.out ?? path.join(root, 'assets', 'stock', tex.file));
+  fs.mkdirSync(path.dirname(out), { recursive: true });
+  fs.writeFileSync(out, found.data);
+  console.log(`wrote ${out} (${found.data.length} bytes). This is the model's embedded copy, which can be smaller than the real texture (check ${tex.width}x${tex.height} against the modder's template).`);
   return 0;
 }
 

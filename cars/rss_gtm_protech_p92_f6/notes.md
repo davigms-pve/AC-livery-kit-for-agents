@@ -78,3 +78,15 @@ Regions (hand-drawn boxes by the user, aligned with the profile): 1 front_bumper
 - **Bug fixed:** `decal`/`text` squashed or cropped any non-square image on a 90 or 270 degree panel (hood, nose, rear bumper), because sharp rotates before it resizes. Earlier renders of wide logos there were wrong
   for that reason, not because of the layout. A regression test covers it.
 - `assets/logos/monster.png` has a checkerboard baked into its background (no transparency). `aclivery logo prep --key-light --trim` cuts it out cleanly (black MONSTER, light-blue ENERGY, black ULTRA).
+
+## Driver name, quarter windows and the wing (verified 2026-10-22 with labelled-grid renders)
+
+- **Quarter windows.** The side windows (door and rear quarter) and the rear window all use `EXTERNAL_glass.dds` (role `glass_2`, 1536x1536, panel `whole`, stock tint with scratches). Layout of the texture
+  (12x12 grid, row 1 at the top): left and right door windows are columns K-L, rows 3-7; the rear quarter windows are columns A-B, rows 2-6; the rear window uses columns from about C. **Left and right share the
+  same texels, mirrored**: text drawn there reads correctly on one side and backwards on the other. Symmetric art (a black patch) is fine. A black patch at `at [0, 0.07, 0.19, 0.46]` gives the black rear-quarter windows of the references.
+  Start from the stock glass: `aclivery car stock rss_gtm_protech_p92_f6 glass_2` saves it to `assets/stock/EXTERNAL_glass.dds`; use it as the texture's `"base"`.
+- **So the driver name is on the roof-edge strips** (`left_mid_upper_2`, `right_mid_upper`), one per side, readable on both. Their painted island is a thin sliver: a 0.30 x 0.30 box at `x 0.585, y 0.10` (left) and `x 0.155, y 0.10` (right)
+  is fully on it (about 70 x 10 cm); the German flag is three 12 x 2 cm stripes just in front of the name.
+- **Wing `centre_tail`** (rotation 0; the metres in the profile are about 1.75x too big for it, but the mapping is uniform): in the upright frame x = across the chord, y = along the span from the car's RIGHT end (0) to its LEFT.
+  The TOP surface is the right half of the panel (x 0.5-1.0, x 0.5 = leading edge side); the left half is the underside and trailing parts. Along-the-span lettering needs `rotate: 90` (tops toward the rear), and then `at` is in the
+  rotated frame: `[0.12, 0.05, 0.76, 0.40]` puts the stacked lockup (about 1.0 x 0.34 m) on the top surface; claws at `[0.03, 0.10, 0.09, 0.30]` and `[0.88, 0.10, 0.09, 0.30]`. PORSCHE on the underside (`[0.10, 0.53, 0.80, 0.44]`) is a guess: the underside was only seen in a reflection.

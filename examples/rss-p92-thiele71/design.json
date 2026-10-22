@@ -165,16 +165,6 @@
      ]
     },
     {
-     "panel": "centre_tail",
-     "image": "porsche",
-     "at": [
-      0.05,
-      0.4,
-      0.9,
-      0.2
-     ]
-    },
-    {
      "panel": "left_mid",
      "text": "DELS",
      "ink": "#222222",
@@ -320,6 +310,140 @@
       0.46,
       0.12
      ]
+    },
+    {
+     "panel": "centre_tail",
+     "image": "monster",
+     "rotate": 90,
+     "at": [
+      0.12,
+      0.05,
+      0.76,
+      0.4
+     ]
+    },
+    {
+     "panel": "centre_tail",
+     "image": "claw",
+     "rotate": 90,
+     "at": [
+      0.03,
+      0.1,
+      0.09,
+      0.3
+     ]
+    },
+    {
+     "panel": "centre_tail",
+     "image": "claw",
+     "rotate": 90,
+     "at": [
+      0.88,
+      0.1,
+      0.09,
+      0.3
+     ]
+    },
+    {
+     "panel": "centre_tail",
+     "image": "porsche",
+     "rotate": 90,
+     "at": [
+      0.1,
+      0.53,
+      0.8,
+      0.44
+     ]
+    },
+    {
+     "panel": "left_mid_upper_2",
+     "color": "#111111",
+     "at": [
+      0.53,
+      0.13,
+      0.05,
+      0.067
+     ],
+     "overlap": true
+    },
+    {
+     "panel": "left_mid_upper_2",
+     "color": "#dd0000",
+     "at": [
+      0.53,
+      0.197,
+      0.05,
+      0.067
+     ],
+     "overlap": true
+    },
+    {
+     "panel": "left_mid_upper_2",
+     "color": "#ffce00",
+     "at": [
+      0.53,
+      0.264,
+      0.05,
+      0.067
+     ],
+     "overlap": true
+    },
+    {
+     "panel": "left_mid_upper_2",
+     "text": "T. THIELE",
+     "ink": "#222222",
+     "bold": true,
+     "at": [
+      0.585,
+      0.1,
+      0.3,
+      0.3
+     ]
+    },
+    {
+     "panel": "right_mid_upper",
+     "color": "#111111",
+     "at": [
+      0.1,
+      0.13,
+      0.05,
+      0.067
+     ],
+     "overlap": true
+    },
+    {
+     "panel": "right_mid_upper",
+     "color": "#dd0000",
+     "at": [
+      0.1,
+      0.197,
+      0.05,
+      0.067
+     ],
+     "overlap": true
+    },
+    {
+     "panel": "right_mid_upper",
+     "color": "#ffce00",
+     "at": [
+      0.1,
+      0.264,
+      0.05,
+      0.067
+     ],
+     "overlap": true
+    },
+    {
+     "panel": "right_mid_upper",
+     "text": "T. THIELE",
+     "ink": "#222222",
+     "bold": true,
+     "at": [
+      0.155,
+      0.1,
+      0.3,
+      0.3
+     ]
     }
    ]
   },
@@ -449,6 +573,22 @@
       0.655,
       1,
       0.345
+     ],
+     "overlap": true
+    }
+   ]
+  },
+  "glass_2": {
+   "base": "assets/stock/EXTERNAL_glass.dds",
+   "elements": [
+    {
+     "panel": "whole",
+     "color": "#000000",
+     "at": [
+      0,
+      0.07,
+      0.19,
+      0.46
      ],
      "overlap": true
     }

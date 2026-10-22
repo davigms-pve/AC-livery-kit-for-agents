@@ -482,3 +482,14 @@ test('logo prep --key-light removes a baked checkerboard but keeps dark and colo
   assert.equal(p(2, 2)[3], 0); assert.equal(p(6, 2)[3], 0);                        // both checker colours gone
   assert.equal(p(15, 20)[3], 255); assert.equal(p(25, 20)[3], 255);                // glyph and blue kept
 });
+
+test('car stock: explains a missing role or a missing model instead of failing silently', () => {
+  const home = tmp(); fakeCar(home, 'cst');
+  const env = { ACLIVERY_HOME: home };
+  const role = run(['car', 'stock', 'cst', 'nope'], env);
+  assert.equal(role.status, 2);
+  assert.match(role.stderr, /no texture role "nope"/);
+  const model = run(['car', 'stock', 'cst', 'ext_main'], env);
+  assert.equal(model.status, 2);
+  assert.match(model.stderr, /car model is not at/);
+});
