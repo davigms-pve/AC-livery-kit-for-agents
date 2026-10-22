@@ -10,7 +10,8 @@ aclivery logo inspect <file>                        size, transparency, backgrou
 aclivery logo prep <in> --out <png> [--crop x,y,w,h] [--key-bg | --key-light] [--erase x,y,w,h] [--tint #RRGGBB] [--trim] [--size 2000]
     --key-bg  turn a near-uniform background (taken from the corners) transparent
     --crop    keep only part of the picture, as fractions x,y,w,h (for example 0,0,1,0.62 keeps the top 62%: the MONSTER and ENERGY rows of a lockup)
-    --erase   clear a box (fractions x,y,w,h of the cropped picture) to remove stray bits, for example a piece of the next word left at an edge
+    --erase   clear a box (fractions x,y,w,h of the cropped picture) to remove stray bits, for example a piece of the next word left at an edge.
+              Applied before --key-bg, so a corner it clears does not count in the flat-corner test
     --key-light  make light neutral pixels (white, light grey) transparent: for logos with a baked-in checkerboard or a light backdrop that is not one flat colour.
               Coloured and dark parts stay; light edges become semi-transparent. Check the result on a dark background.
     --tint    recolour every opaque pixel, keeping the shape (for one-colour decals)
@@ -130,10 +131,19 @@ async function prep(file, flags) {
     data = cropped.data; w = cropped.info.width; h = cropped.info.height;
   }
 
-  if (flags['key-bg']) {
-    const bg = await backgroundInfo(sharp(data, { raw: { width: w, height: h, channels: 4 } }), w, h);
-    if (!bg.uniformCorners) throw new UsageError('--key-bg needs a flat background colour in all four corners; this one is not flat');
-    const [r0, g0, b0] = bg.corner;
+  // Erase first, so a stray bit in a corner (the next word of a lockup) does not spoil the --key-bg corner check.
+  if (flags.erase) {
+    const c = String(flags.erase).split(',').map(Number);
+    if (c.length !== 4 || c.some((n) => Number.isNaN(n)) || c[0] < 0 || c[1] < 0 || c[2] <= 0 || c[3] <= 0) throw new UsageError('--erase must be x,y,w,h fractions, like 0.7,0.8,0.3,0.2');
+    for (let y = Math.floor(c[1] * h); y < Math.min(h, Math.ceil((c[1] + c[3]) * h)); y++) for (let x = Math.floor(c[0] * w); x < Math.min(w, Math.ceil((c[0] + c[2]) * w)); x++) data[(y * w + x) * 4 + 3] = 0;
+  }
+  // Corners that are already transparent (erased, or a logo with alpha) do not count; the others must share one flat colour.
+  const keyCorners = [[0, 0], [w - 1, 0], [0, h - 1], [w - 1, h - 1]].map(([x, y]) => data.subarray((y * w + x) * 4, (y * w + x) * 4 + 4)).filter((c) => c[3] >= 16);
+  if (flags['key-bg'] && keyCorners.length) {   // all corners transparent: nothing to key
+    const corners = keyCorners;
+    const dist = (a, b) => Math.max(Math.abs(a[0] - b[0]), Math.abs(a[1] - b[1]), Math.abs(a[2] - b[2]));
+    if (!corners.every((c) => dist(c, corners[0]) < 8)) throw new UsageError('--key-bg needs a flat background colour in all four corners; this one is not flat (an --erase box over a stray corner makes that corner not count)');
+    const [r0, g0, b0] = corners[0];
     const lo = 12, hi = 48; // inside lo: fully transparent; lo..hi: soft edge, so anti-aliased fringes do not keep a halo
     for (let i = 0; i < data.length; i += 4) {
       const dist = Math.max(Math.abs(data[i] - r0), Math.abs(data[i + 1] - g0), Math.abs(data[i + 2] - b0));
@@ -149,11 +159,6 @@ async function prep(file, flags) {
       const a = mn >= 190 ? 0 : mn <= 140 ? 255 : Math.round(((190 - mn) / 50) * 255);
       data[i + 3] = Math.min(data[i + 3], a);
     }
-  }
-  if (flags.erase) {
-    const c = String(flags.erase).split(',').map(Number);
-    if (c.length !== 4 || c.some((n) => Number.isNaN(n)) || c[0] < 0 || c[1] < 0 || c[2] <= 0 || c[3] <= 0) throw new UsageError('--erase must be x,y,w,h fractions, like 0.7,0.8,0.3,0.2');
-    for (let y = Math.floor(c[1] * h); y < Math.min(h, Math.ceil((c[1] + c[3]) * h)); y++) for (let x = Math.floor(c[0] * w); x < Math.min(w, Math.ceil((c[0] + c[2]) * w)); x++) data[(y * w + x) * 4 + 3] = 0;
   }
   if (flags.tint) {
     const m = /^#?([0-9a-f]{6})$/i.exec(String(flags.tint));

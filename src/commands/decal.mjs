@@ -32,6 +32,44 @@ function toUv([x, y, w, h], [uw, uh], rot) {
   return [x, y, w, h];
 }
 
+/** Rasterise a UV polygon ([u, v] fractions, v from the top) into `mask` (w x h, the piece placed at left/top on a W x H texture). */
+function fillPoly(mask, w, h, poly, left, top, W, H) {
+  for (let j = 0; j < h; j++) {
+    const v = (top + j + 0.5) / H, xs = [];
+    for (let i = 0, k = poly.length - 1; i < poly.length; k = i++) {
+      const [ui, vi] = poly[i], [uk, vk] = poly[k];
+      if ((vi > v) !== (vk > v)) xs.push(((uk - ui) * (v - vi)) / (vk - vi) + ui);
+    }
+    xs.sort((a, b) => a - b);
+    for (let n = 0; n + 1 < xs.length; n += 2) {
+      const x0 = Math.max(0, Math.ceil(xs[n] * W - left - 0.5)), x1 = Math.min(w - 1, Math.floor(xs[n + 1] * W - left - 0.5));
+      for (let x = x0; x <= x1; x++) mask[j * w + x] = 1;
+    }
+  }
+}
+
+/**
+ * A panel's rect is only the bounding box of its island, and other islands can sit inside it (the P92's door lies inside the rear
+ * quarter's box). For a whole-panel paint, clear the pixels that fall inside another panel's outline and not inside this one's,
+ * so a colour or pattern on one panel does not flood its neighbours. Own edges keep the full box (the outlines are simplified).
+ */
+async function keepNeighbours(pieceBuf, info, left, top, W, H, panels, name) {
+  const own = panels[name];
+  if (!Array.isArray(own?.outline) || own.outline.length < 3) return pieceBuf;
+  const [l, t, r, b] = [left / W, top / H, (left + info.width) / W, (top + info.height) / H];
+  const others = Object.entries(panels).filter(([n, p]) => n !== name && Array.isArray(p.outline) && p.outline.length >= 3 && p.rect
+    && p.rect[0] < r && p.rect[0] + p.rect[2] > l && p.rect[1] < b && p.rect[1] + p.rect[3] > t);
+  if (!others.length) return pieceBuf;
+  const { width: w, height: h } = info;
+  const mine = new Uint8Array(w * h), theirs = new Uint8Array(w * h);
+  fillPoly(mine, w, h, own.outline, left, top, W, H);
+  for (const [, p] of others) fillPoly(theirs, w, h, p.outline, left, top, W, H);
+  const { data } = await sharp(pieceBuf).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  let cleared = 0;
+  for (let i = 0; i < w * h; i++) if (theirs[i] && !mine[i]) { data[i * 4 + 3] = 0; cleared++; }
+  return cleared ? sharp(data, { raw: { width: w, height: h, channels: 4 } }).png().toBuffer() : pieceBuf;
+}
+
 export async function run(argv) {
   const { flags, positional } = parseArgs(argv, { bools: ['overlap', 'under'] });
   const [carId] = positional;
@@ -99,7 +137,9 @@ export async function run(argv) {
   const [bx, by] = toUv(box, upright, rot);
   const left = Math.round(px + bx), top = Math.round(py + by);
 
-  const { data: pieceBuf, info: pieceInfo } = await piece.png().toBuffer({ resolveWithObject: true });
+  let { data: pieceBuf, info: pieceInfo } = await piece.png().toBuffer({ resolveWithObject: true });
+  const wholePanel = at[0] <= 0 && at[1] <= 0 && at[2] >= 1 && at[3] >= 1;
+  if (wholePanel) pieceBuf = await keepNeighbours(pieceBuf, pieceInfo, left, top, W, H, pack.profile.panels?.[role] ?? {}, flags.panel);
 
   // Overlap guard: art must not land on top of other art unless the design shows it. Placements are remembered in a
   // sidecar file next to the texture; a fresh canvas (no --base) starts a new list.

@@ -6,7 +6,7 @@ Measurements only; no art. Re-run `aclivery car prep <kn5> --skins <skins dir> [
 ## A complete skin of this car has (checklist, 2026-10-22: use it before saying you are done)
 
 - **Body `ext_main`**: tonal art everywhere (generated `leaves`, `ink-lines`, `cracks` placeholders), cyan blots and solid cyan parts (mirrors, wing endplates, splitter and diffuser edges), the claw and the lockup on hood, roof, doors, rear and wing,
-  PORSCHE on the bumper cover, MOTUL / GoPro / pink 71 / TOW on the rear, POTTSPEED on the sills with a black band, the driver name and flag on the roof-edge strips, SC discs, dark carbon parts (splitter, diffuser, wing underside and uprights, fender vents with slats).
+  PORSCHE on the bumper cover, MOTUL / GoPro / pink 71 / TOW on the rear, POTTSPEED on the sills with a black band, the driver name and flag on the roof-edge strips, SC discs (nose corners and rear quarters), dark carbon parts (splitter, diffuser, wing uprights, fender vents with slats), a white wing underside with dark PORSCHE, PAPA'S HOUSE OF GAME on the ducktail, cyan intake bars.
 - **`door_plates`**: a white DELS 71 card on each door. **`hr_generic`** (start from the stock file): the GRAN TURISMO windshield banner. **`glass_2`** (start from the stock file): black rear-quarter windows and the DELS rear window banner.
   **`le_god_grille`**: DELS on the front centre grille.
 - Details for each are below. Leaving one out is the most common gap.
@@ -120,4 +120,23 @@ Regions (hand-drawn boxes by the user, aligned with the profile): 1 front_bumper
 
 - The small German flag sits in the rear-quarter window, not on the roof strip. On `glass_2` (`whole`) the three stripes are stacked along the texture's **x** (each `0.010` wide, `0.052` long, starting `at [0.092, 0.20]`: black, red, gold): the texture's y runs left-right on the car,
   so stripes stacked in y would stand upright. A symmetric flag survives the left/right sharing of these texels; text does not (it reads backwards on one side), so T. THIELE stays on the roof strips.
-- Not placed yet: the small Porsche crest on the front fender next to the wheel and on the nose (needs a real crest file).
+- The small Porsche crest (cut from `assets/logos/porsche_crest.png`) was placed on the front fenders and the hood tip in run m1-opus-1 (2026-10-22); see the section below.
+
+## Corrections and new layout facts (verified 2026-10-22 by renders in run m1-opus-1, not in the game)
+
+- **UNRESOLVED (owner's call):** the owner observed a darker tone at the bottom of the wings (black paint or carbon); run m1-opus-1 read the underside as white from two photos. Look at both before painting it.
+- **Wing underside is white with dark PORSCHE, not carbon (Opus's reading).** Photos 854670081 and 853877834 show a light underside with big dark letters. `porsche` on `centre_tail` with `rotate: 270`,
+  `at [0.10, 0.05, 0.80, 0.40]` reads upright from behind (with `rotate: 90` it reads upside-down). The checklist line "wing underside" under dark carbon parts above is wrong.
+- **Hood dome edge.** The raised dome of `centre_front` ends at about y 0.78. The lockup box `[0.30, 0.70, 0.40, 0.26]` given above puts the MONSTER row under the dome's lip (hidden from the front).
+  What works: claw `[0.30, 0.18, 0.40, 0.56]` (about 64 x 93 cm), MONSTER ENERGY rows `[0.31, 0.79, 0.38, 0.095]`, ABSOLUTELY ZERO text `[0.34, 0.89, 0.32, 0.035]`, crest `[0.48, 0.93, 0.04, 0.05]`.
+- **Rear deck.** `centre_tail_upper_3` is the ducktail top above the tail-light bar (where PAPA'S HOUSE OF GAME sits); upright text there reads correctly from behind with NO extra rotation
+  (`rotate: 180` was tried and reads upside-down). `centre_tail_upper_5` is the narrower strip right behind the rear window (engine-cover vents), not the deck lid.
+- **Doors.** On both doors upright x runs left to right as seen from that side: `left_mid` x 0 = front, `right_mid` x 0 = rear. `left_rear`/`right_rear` run from under the door (sill) to the rear corner
+  (left: x 0 = front; right: x 0 = rear). The door-plate mesh covers about x 0.02-0.74 of the door and draws as a big grey block until `door_plates` is overridden: build it before judging the door art.
+- **Wing endplates `left_tail`/`right_tail`.** The outer face is the lower half of the panel (y about 0.5-0.95); the upper half is the inner face and shows art reversed. MONSTER `[0.15, 0.66, 0.70, 0.12]`
+  and ZERO ULTRA `[0.22, 0.80, 0.56, 0.07]` read upright on the outer face.
+- **Front intake.** The lower half of `centre_nose` (y 0.5-1) is the frame round the outer intakes (black in the photos, with the SC discs) and the two vertical bars of the centre intake
+  (x 0.35-0.40 and 0.60-0.65, cyan in the photos). The bars are thin, so `apply --check` reports them "0% on painted surface" (the panel outline is simplified): the render shows them right.
+  Draw them after the `centre_nose_upper_2` fill, whose box covers them.
+- **Crest behind the front wheel.** `left_mid_upper_4` / `right_mid_upper_3` are the mirror base and a thin strip at 0.8 m, not the place for the crest; `left_front` `[0.82, 0.48, 0.07, 0.122]` is used (higher than in the photos).
+- **B-pillar (vertical MONSTER).** Not on `left_mid_lower_3`, `left_mid_upper` (a roof hatch), `left_tail_upper` or `left_tail_upper_2`. Still unknown.

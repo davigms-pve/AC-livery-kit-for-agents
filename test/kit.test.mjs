@@ -187,6 +187,21 @@ test('decal: --fill transparent keeps untouched pixels transparent and --color p
   assert.deepEqual(px(100, 50), [255, 0, 0, 255]); // inside: solid red
 });
 
+test('decal: a whole-panel colour does not flood another island that sits inside its box', async () => {
+  const home = tmp();
+  // "big" is an L-shaped island whose box contains the small island "door" (like the P92's rear quarter around the door).
+  fakeCar(home, 'nb', undefined, {
+    big: { rect: [0.1, 0.1, 0.8, 0.8], textRotation: 0, outline: [[0.1, 0.1], [0.9, 0.1], [0.9, 0.9], [0.6, 0.9], [0.6, 0.4], [0.1, 0.4]] },
+    door: { rect: [0.2, 0.5, 0.3, 0.3], textRotation: 0, outline: [[0.2, 0.5], [0.5, 0.5], [0.5, 0.8], [0.2, 0.8]] } });
+  const out = path.join(home, 'o.png');
+  assert.equal(run(['decal', 'nb', '--panel', 'big', '--color', '#ff0000', '--fill', '#ffffff', '--out', out], { ACLIVERY_HOME: home }).status, 0);
+  const { data, info } = await sharp(out).raw().toBuffer({ resolveWithObject: true });
+  const px = (x, y) => [...data.subarray((y * info.width + x) * info.channels, (y * info.width + x) * info.channels + 3)];
+  assert.deepEqual(px(150, 20), [255, 0, 0]);     // on its own island: red
+  assert.deepEqual(px(70, 65), [255, 255, 255]);  // inside the door's island: untouched
+  assert.deepEqual(px(110, 85), [255, 0, 0]);     // in its box, on no island: still painted (outlines are simplified)
+});
+
 test('text: draws pixels inside the panel box and nowhere else', async () => {
   const home = tmp(); fakeCar(home, 'tt', { file: 'EXT_Main.dds', width: 800, height: 400 }, { a: { rect: [0.25, 0.25, 0.5, 0.5], textRotation: 0 } });
   const out = path.join(home, 't.png');
@@ -519,6 +534,18 @@ test('logo prep --erase clears a box so stray bits can be removed', async () => 
   assert.equal(run(['logo', 'prep', src, '--out', out, '--erase', '1,2']).status, 2);
 });
 
+test('logo prep --erase over a stray corner lets --key-bg key the rest', async () => {
+  const dir = tmp(), src = path.join(dir, 'in.png'), out = path.join(dir, 'out.png');
+  const w = 40, h = 40, raw = Buffer.alloc(w * h * 3, 40);           // dark flat background
+  for (let y = 15; y < 25; y++) for (let x = 15; x < 25; x++) raw.fill(200, (y * w + x) * 3, (y * w + x) * 3 + 3);   // the mark
+  for (let y = 34; y < 40; y++) for (let x = 34; x < 40; x++) raw.fill(255, (y * w + x) * 3, (y * w + x) * 3 + 3);   // stray letter in a corner
+  await sharp(raw, { raw: { width: w, height: h, channels: 3 } }).png().toFile(src);
+  assert.equal(run(['logo', 'prep', src, '--out', out, '--key-bg']).status, 2);   // corner not flat
+  assert.equal(run(['logo', 'prep', src, '--out', out, '--erase', '0.8,0.8,0.2,0.2', '--key-bg']).status, 0);
+  const p = await px(out);
+  assert.equal(p(2, 2)[3], 0); assert.equal(p(20, 20)[3], 255); assert.equal(p(37, 37)[3], 0);
+});
+
 test('brief: shows the references and takes the base colour from the analysis', async () => {
   const { gaps, baseColourOf } = await import('../src/commands/brief.mjs');
   const yes = () => true;
@@ -637,6 +664,9 @@ test('brief plan: NEXT walks sourcing, fetch assets, the design build, the missi
   assert.match(next(b).do, /layer 1 "Monster claw" is a brand mark to FETCH, not redraw/);
   b.analysis.layers[1].asset = 'assets/logos/claw_placeholder.png';
   assert.match(next(b).do, /to FETCH/);                     // a placeholder does not count
+  b.analysis.layers[1].placeholder = 'user: no real file exists, downloads not allowed';
+  assert.match(next(b).do, /build in parts/);               // ... unless the user allowed it (recorded on the layer)
+  delete b.analysis.layers[1].placeholder;
   // 3. the real file: now build in parts
   b.analysis.layers[1].asset = 'assets/logos/claw_prepped.png';
   assert.match(next(b).do, /build in parts: write the design file.*--only ext_main/s);
