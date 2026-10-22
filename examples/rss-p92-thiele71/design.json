@@ -2,7 +2,8 @@
  "car": "rss_gtm_protech_p92_f6",
  "name": "Thiele71 draft 3",
  "colors": {
-  "cyan": "#4ec4d6"
+  "cyan": "#4ec4d6",
+  "carbon": "#17181a"
  },
  "assets": {
   "monster": {
@@ -82,12 +83,77 @@
     "trim": true
    }
   },
-  "sc_disc": "assets/logos/sc_disc_placeholder.png"
+  "sc_disc": "assets/logos/sc_disc_placeholder.png",
+  "porsche_light": {
+   "file": "assets/logos/porsche.png",
+   "prep": {
+    "keyBg": true,
+    "tint": "#d5d8dc",
+    "trim": true,
+    "size": 2000
+   }
+  }
  },
  "textures": {
   "ext_main": {
    "fill": "#f6f6f6",
    "elements": [
+    {
+     "panel": "centre_nose_lower",
+     "color": "carbon",
+     "overlap": true
+    },
+    {
+     "panel": "centre_nose_upper_2",
+     "color": "carbon",
+     "overlap": true
+    },
+    {
+     "panel": "left_nose_lower",
+     "color": "carbon",
+     "overlap": true
+    },
+    {
+     "panel": "right_nose_lower",
+     "color": "carbon",
+     "overlap": true
+    },
+    {
+     "panel": "centre_tail_upper_4",
+     "color": "carbon",
+     "overlap": true
+    },
+    {
+     "panel": "centre_tail_lower",
+     "color": "carbon",
+     "overlap": true
+    },
+    {
+     "panel": "centre_tail_upper_2",
+     "color": "carbon",
+     "overlap": true
+    },
+    {
+     "panel": "left_tail_upper_3",
+     "color": "carbon",
+     "overlap": true
+    },
+    {
+     "panel": "right_tail_upper_3",
+     "color": "carbon",
+     "overlap": true
+    },
+    {
+     "panel": "centre_tail",
+     "color": "carbon",
+     "at": [
+      0,
+      0,
+      0.5,
+      1
+     ],
+     "overlap": true
+    },
     {
      "pattern": "leaves",
      "panels": [
@@ -197,21 +263,22 @@
      "panel": "centre_front",
      "image": "claw",
      "at": [
-      0.34,
-      0.18,
-      0.32,
-      0.42
+      0.37,
+      0.14,
+      0.26,
+      0.46
      ]
     },
     {
      "panel": "centre_mid",
      "image": "claw",
      "at": [
-      0.3,
+      0.12,
       0.15,
-      0.4,
+      0.76,
       0.7
-     ]
+     ],
+     "rotate": 90
     },
     {
      "panel": "left_mid",
@@ -349,14 +416,15 @@
     },
     {
      "panel": "centre_tail",
-     "image": "porsche",
+     "image": "porsche_light",
      "rotate": 90,
      "at": [
       0.1,
       0.53,
       0.8,
       0.44
-     ]
+     ],
+     "overlap": true
     },
     {
      "panel": "left_mid_upper_2",
