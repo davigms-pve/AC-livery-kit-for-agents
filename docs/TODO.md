@@ -134,6 +134,8 @@ artwork). Treat it as a required layer, not a missing asset. Logos must not over
   | Wing underside lettering, creature art on the tips | guess / not done | |
   | Tyre lettering | out of scope (stock tyre) | |
 
+- [x] **Run 2 fixes (2026-10-22):** `brief show` lists the references; the base colour is read from the analysis; bolder default `leaves`/`ink-lines`; `apply --check` suggests the nearest box fully on the surface; the P92 notes open with a "complete skin" checklist.
+- [ ] **Iteration gap.** The hand-built draft 3 is much better than the Haiku run because it went through about 15 compare-and-fix cycles with probe renders; Haiku does one pass. Next kit work: make the loop cheap and short (a summary after `apply` that names the biggest differences from the references, a fix list the model works through) and let a model do two or three rounds; then rerun M1.
 - [ ] **B24 Number and lettering styles.** Made-up number styles: match from a short list of free fonts tagged by style (italic, condensed, brush, stencil) via `text --font`, rather than freehand redrawing.
   Unverified first: whether the renderer on Windows can use a font file that is not installed (else convert text to paths). Bundling fonts needs the owner's yes, a licence check and a NOTICE line.
 - [ ] **B25 Free art sources.** Optional later: CC0 motif/shape libraries (consent per download, licence note per file). Logos stay local, personal use, consent only. Procedural patterns (B17) cover tonal art without downloads.
