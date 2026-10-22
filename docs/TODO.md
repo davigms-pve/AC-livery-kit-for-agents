@@ -55,7 +55,7 @@ refer to them in commits and the brief.
 Why the first pass fell short: placement by guess, signature art missing, other textures skipped, no loop against the references.
 
 - [~] **B1 Multi-texture design flow.** One design drives body, door plates and the windshield banner (`HR_Generic`, with `"base"`): done in draft 3 (`examples/rss-p92-thiele71/design.json`). Not yet: rear window banner (texture unknown), roof/decal textures, the pillar name (panel unknown).
-- [ ] **B2 Signature art source.** Ink line art, cyan splatter and brush strokes, the big claw. Options: the user's original design files
+- [ ] **B2 Signature art source.** (Owner, 2026-10-22: the claw is part of the Monster logo, so fetch the real art instead of redrawing it: the placeholder generators are stopgaps. Candidate sources found by search, none downloaded yet: SeekLogo, VectorSeek "Monster claws", CDNLogo; all are unofficial and marked non-commercial. Needs the owner's yes per download.) Ink line art, cyan splatter and brush strokes, the big claw. Options: the user's original design files
   (ask), vectorising from photos, an image-generation arm. Decision needed (see section 5).
 - [ ] **B3 Better logos.** SVG or press-kit sources; the claw as a separate asset; correct colour variants. Reference-quality checks.
 - [ ] **B4 Reference-driven placement.** For each element: which view shows it, target panel, size, orientation; recorded in the brief.

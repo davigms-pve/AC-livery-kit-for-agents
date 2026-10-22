@@ -14,6 +14,7 @@ aclivery logo inspect assets/logos/monster.png          # size, transparency, ba
 aclivery logo prep <in> --out assets/logos/prepped/monster.png --key-bg --tint "#111111" --trim --size 2000
 ```
 
+0. **A brand mark exists: fetch it, do not redraw it.** The claw is the Monster logo, the lion is Peugeot, the crest is Porsche: these files are public. Search for the official press kit or a vector (SVG) first, then well-known logo libraries; propose ONE source to the user (URL, host, file type, size if known) with the licence caveat (logos are trademarks; local, personal use only) and wait for the yes. Redrawing is only a stopgap for art that does not exist as a file (hand-drawn livery art).
 1. **Always ask before downloading.** Tell the user the URL, host and file name; wait for a clear yes. Then use `--yes`.
 2. **Prefer vectors (SVG) or the brand's press kit**, then big transparent PNGs. Check with `inspect`.
    It warns about low resolution (under 800 px), flat backgrounds and missing transparency.

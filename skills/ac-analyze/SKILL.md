@@ -47,7 +47,7 @@ aclivery brief set <slug> analysis '{"summary":"...","layers":[...],"overlapRule
   confidence is not high.
 - **Marks you recognise by shape.** Three slanted bars on a Monster Energy car are very likely the Monster claw; a lion between two bars is
   Peugeot. Write `"brand"` and `"part"` (`wordmark`, `symbol` or `both`) and put `medium` unless a word or caption confirms it. The brief
-  then asks the user to confirm the read before anything is searched or downloaded; once confirmed, the usual "needs an image file" step finds the asset.
+  then asks the user to confirm the read before anything is searched or downloaded; once confirmed, the usual "needs an image file" step finds the asset: search for the brand's own file (skill `ac-logos`), never redraw a brand mark.
   The same brand often has two parts on the car (a symbol and a wordmark): list them as two layers.
 - **Doubt is information, not failure.** A `low` layer becomes a question to the user that quotes your evidence ("I am not sure about the
   small script near the roof (b.jpg front): what is it?"). Ask it; do not build a guess into the livery. Record the answer in the brief.

@@ -81,7 +81,7 @@ export function gaps(b, { packExists = false, fileExists = (p) => fs.existsSync(
     if (!e.target && !e.panel) todo.push({ ask: `Where does "${e.what}" go on the car?`, set: `elements.${i}.target` });
     else if (!e.panel) todo.push({ ask: `Which panel is "${e.what}" (${e.target})?`, do: `aclivery panel regions ${b.car?.id ?? '<car>'}`, set: `elements.${i}.panel` });
     if (e.asset && !fileExists(e.asset)) todo.push({ ask: `The asset for "${e.what}" is missing (${e.asset}). Provide the file or pick another source.`, do: 'skills/ac-logos' });
-    else if (!e.asset && e.needsAsset !== false && /logo|wordmark|sponsor|art|decal/i.test(e.what)) todo.push({ ask: `"${e.what}" needs an image file. Do you have one, or should we look for one?`, set: `elements.${i}.asset` });
+    else if (!e.asset && e.needsAsset !== false && /logo|wordmark|sponsor|art|decal/i.test(e.what)) todo.push({ ask: `"${e.what}" needs an image file. Do you have one, or may I search for the brand's official or vector file and propose a download for you to approve?`, set: `elements.${i}.asset` });
   });
   if (b.elements?.length && /number/i.test(JSON.stringify(b.elements)) && !b.driver?.number) todo.push({ ask: 'What is the car number?', set: 'driver.number' });
   if (b.elements?.length && todo.length === 0 && !b.elements.every((e) => e.status === 'checked')) {
