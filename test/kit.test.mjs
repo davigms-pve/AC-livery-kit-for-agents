@@ -681,10 +681,36 @@ test('brief plan: NEXT walks sourcing, fetch assets, the design build, the missi
   b.build.round = 3;
   assert.match(next(b).do, /export: aclivery apply <design> --export/);
   b.build.exported = true;
+  assert.match(next(b).do, /write the report \(what is built; placeholders: L2 "grey leaves" \(generated pattern\); skipped: none;/);
+  b.report = 'Built, exported; the leaves are a generated pattern; not loaded in the game.';
   assert.equal(gaps(b, { packExists: true, fileExists: fe }).length, 0);
   // a skipped layer must say why
   b.analysis.layers[3].source = 'skip';
   assert.match(next(b).do, /marked skip: say why/);
+});
+
+test('brief: a skipped layer shows its reason and leaves the coverage check; an exported build asks for a report, then shows DONE', async () => {
+  const home = tmp(); applyCar(home, 'dn');
+  const dir = tmp(), env = { ACLIVERY_HOME: home };
+  const layer = (o) => ({ confidence: 'high', evidence: 'a.jpg left', ...o });
+  const pdir = path.join(home, 'projects', 'dn'); fs.mkdirSync(pdir, { recursive: true });
+  const layers = [layer({ kind: 'base', what: 'white' }), layer({ kind: 'text', what: 'driver name', source: 'construct' }),
+    layer({ kind: 'logo', what: 'Porsche crest', source: 'skip', why: 'no file; the owner has not said yes to a download' }), layer({ kind: 'tonal-art', what: 'grey leaves', source: 'generate' })];
+  fs.writeFileSync(path.join(pdir, 'brief.json'), JSON.stringify({ slug: 'dn', title: 'Done', car: { id: 'dn' }, references: [{ file: 'a.jpg', view: 'left' }], analysis: { layers },
+    build: { round: 3, missing: 0, elements: 1, cutOff: 0, exported: true, design: 'd.json' } }));
+  const file = path.join(dir, 'd.json');
+  fs.writeFileSync(file, JSON.stringify({ car: 'dn', brief: 'dn', textures: { ext_main: { elements: [{ panel: 'a', text: 'DRIVER NAME', at: [0, 0.5, 0.5, 0.2] }] } } }));
+  const check = run(['apply', file, '--check'], env);
+  assert.equal(check.status, 0, check.stderr);
+  assert.doesNotMatch(check.stdout, /Porsche crest/);   // skipped with a reason: not a gap
+  const show = run(['brief', 'show', 'dn'], env).stdout;
+  assert.match(show, /L2 \[skip\] Porsche crest\s+skipped: no file; the owner has not said yes/);
+  assert.match(show, /write the report \(.*placeholders: L3 "grey leaves" \(generated pattern\); skipped: L2 "Porsche crest": no file/s);
+  assert.equal(run(['brief', 'set', 'dn', 'report', 'Built and exported; leaves are generated; crest skipped; not loaded in the game.'], env).status, 0);
+  const done = run(['brief', 'show', 'dn'], env).stdout;
+  assert.match(done, /DONE: 3 full-build round\(s\), exported, report written\./);
+  assert.match(done, /placeholders: L3 "grey leaves"/);
+  assert.match(done, /Not verified in the game/);
 });
 
 test('apply --only rebuilds the chosen textures and leaves the others as they were; it cannot export', async () => {

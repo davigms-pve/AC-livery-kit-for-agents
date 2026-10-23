@@ -327,7 +327,8 @@ const KIND_OK = {
  * against the element's text, image and asset name, label and "covers"; and the panel of each element against the car's regions.
  */
 export function coverage(design, brief, regions) {
-  const layers = (brief?.analysis?.layers ?? []).map((l, i) => ({ l, i })).filter(({ l }) => l.kind && l.kind !== 'base');
+  // A layer left out on purpose ("source": "skip" with a "why") is not a gap; one skipped without a reason still is.
+  const layers = (brief?.analysis?.layers ?? []).map((l, i) => ({ l, i })).filter(({ l }) => l.kind && l.kind !== 'base' && !(l.source === 'skip' && String(l.why ?? '').trim()));
   if (!layers.length) return [];
   const items = [];
   for (const [role, t] of Object.entries(design.textures ?? {})) for (const [i, e] of (t.elements ?? []).entries()) {

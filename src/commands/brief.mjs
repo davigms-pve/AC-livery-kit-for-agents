@@ -59,6 +59,18 @@ export const suggestSource = (l) => (l.source && SOURCES.includes(l.source) ? l.
     : l.kind === 'tonal-art' ? 'generate'
       : l.kind === 'marking' ? 'stock' : 'construct');
 
+const hasReport = (b) => typeof b.report === 'string' ? b.report.trim() !== '' : !!b.report && Object.keys(b.report).length > 0;
+
+/** What the final report must name: layers drawn from placeholder art, and layers left out (with the reason given). */
+export function openNotes(b) {
+  const live = (b.analysis?.layers ?? []).map((l, i) => ({ l, i })).filter(({ l }) => l.kind !== 'base');
+  const name = ({ l, i }) => `L${i} "${String(l.what ?? l.kind).slice(0, 40)}"`;
+  return {
+    placeholders: live.filter(({ l }) => l.source === 'generate' || /placeholder/i.test(String(l.asset ?? ''))).map((x) => `${name(x)} (${x.l.source === 'generate' ? 'generated pattern' : 'placeholder file'})`),
+    skipped: live.filter(({ l }) => l.source === 'skip').map((x) => `${name(x)}: ${String(x.l.why ?? '').trim() || 'no reason given'}`),
+  };
+}
+
 export function gaps(b, { packExists = false, fileExists = (p) => fs.existsSync(p) } = {}) {
   const todo = [];
   if (!b.car?.id) todo.push({ ask: 'Which car is this for? (the car folder name, e.g. rss_gtm_protech_p92_f6)', set: `car.id` });
@@ -128,6 +140,10 @@ export function gaps(b, { packExists = false, fileExists = (p) => fs.existsSync(
         else if (b.build.missing > 0) todo.push({ ask: null, do: `the last build left ${b.build.missing} layer(s) missing: run aclivery apply <design> --check, fix every "missing:" line (add the element, or record a decision), then build again` });
         else if ((b.build.round ?? 0) < ROUNDS) todo.push({ ask: null, do: `rounds done: ${b.build.round} of at least ${ROUNDS} (more are fine while the differences are big). Look at compare.png, name the 3 to 5 biggest differences from the references, fix those in the design, apply again` });
         else if (!b.build.exported) todo.push({ ask: null, do: 'export: aclivery apply <design> --export, then aclivery validate skin <dist folder>/<Name>' });
+        else if (!hasReport(b)) {
+          const { placeholders, skipped } = openNotes(b);
+          todo.push({ ask: null, do: `write the report (what is built; placeholders: ${placeholders.join('; ') || 'none'}; skipped: ${skipped.join('; ') || 'none'}; and that none of it was verified in the game until the user loads it in Content Manager and says so)`, set: 'report' });
+        }
       }
     }
   }
@@ -174,11 +190,21 @@ export async function run(argv) {
     if (b.build) console.log(`  built: ${b.build.part ? `part [${b.build.part}] after ` : ''}round ${b.build.round}, ${b.build.elements} element(s) in ${b.build.design}, ${b.build.missing} layer(s) missing, ${b.build.cutOff} cut off  (the design file, not this list, is the source of truth)`);
     const planRows = (b.analysis?.layers ?? []).map((l, i) => [i, l]).filter(([, l]) => l.kind !== 'base' && l.source);
     for (const [i, l] of planRows) {
+      if (l.source === 'skip') { console.log(`    L${i} [skip] ${String(l.what).slice(0, 48)}  skipped: ${String(l.why ?? '').trim() || 'NO REASON GIVEN'}`); continue; }
       const state = l.source === 'fetch' ? (l.asset ? (/placeholder/i.test(l.asset) ? 'PLACEHOLDER' : fs.existsSync(l.asset) ? 'file ok' : 'FILE MISSING') : 'NO FILE YET') : '';
       console.log(`    L${i} [${l.source}] ${String(l.what).slice(0, 48)}${state ? '  ' + state : ''}${l.built ? (l.built.part ? '  built (part build)' : '  built r' + l.built.round) : '  not built'}`);
     }
     for (const [i, r] of (b.references ?? []).entries()) console.log(`    ref ${i}. ${path.basename(r.file ?? '?')}  view: ${r.view ?? '?'}${r.notes ? '  ' + r.notes : ''}`);
     for (const [i, e] of (b.elements ?? []).entries()) console.log(`    ${i}. ${e.what}  ->  ${e.panel ?? e.target ?? '?'}  [${e.status ?? 'idea'}]${e.asset ? '  ' + path.basename(e.asset) : ''}`);
+    if (!todo.length && b.build?.exported && hasReport(b)) {
+      const { placeholders, skipped } = openNotes(b);
+      console.log(`\nDONE: ${b.build.round} full-build round(s), exported, report written.`);
+      console.log(`  placeholders: ${placeholders.join('; ') || 'none'}`);
+      console.log(`  skipped: ${skipped.join('; ') || 'none'}`);
+      console.log(`  report: ${typeof b.report === 'string' ? b.report : JSON.stringify(b.report)}`);
+      console.log('  Not verified in the game until the user loads the zip in Content Manager and says so.');
+      return 0;
+    }
     if (!todo.length) { console.log('\nNothing missing. Ship it: aclivery export, then check in Content Manager.'); return 0; }
     const [next, ...later] = todo;
     console.log('\nNEXT' + (next.ask ? ` (ask the user): ${next.ask}` : ':'));
