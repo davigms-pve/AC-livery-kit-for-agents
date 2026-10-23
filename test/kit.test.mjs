@@ -458,6 +458,31 @@ test('apply: a texture can start from a base picture (stock stickers kept), not 
   const w = run(['apply', file, '--check'], env).stdout;
   assert.match(w, /elements\[0\] leaves: marks are too strong/);
   assert.match(w, /elements\[1\] cracks: marks are too strong/);
+  assert.match(w, /elements\[0\] leaves: .*Now: colour #000000, opacity 1\. Use a colour/);   // opacity set in the design: no default note
+  // opacity left out: the warning says what the default is
+  fs.writeFileSync(file, JSON.stringify({ car: 'bc', textures: { ext_main: { fill: '#f6f6f6', elements: [{ pattern: 'cracks', panel: 'a', color: '#000000' }] } } }));
+  assert.match(run(['apply', file, '--check'], env).stdout, /Now: colour #000000, opacity 0\.7 \(the default for cracks; the design does not set it\)/);
+});
+
+test('render --each: --out must be a folder, said before anything is loaded', () => {
+  const r = run(['render', 'nocar', '--skin', 'x', '--each', '--out', 'view.png'], { ACLIVERY_HOME: tmp() });
+  assert.notEqual(r.status, 0);
+  assert.match(r.stderr, /--each writes one PNG per view.*--out must be a folder, not a file \(view\.png\)/);
+});
+
+test('coverage: "rear", "quarter" and "fender" are place words; "rear quarter" is the side, not the back', async () => {
+  const { coverage } = await import('../src/commands/apply.mjs');
+  const regions = { regions: [{ name: 'hood_and_front_fenders', panels: [{ name: 'hoodp' }] }, { name: 'left_side', panels: [{ name: 'sidep' }] }, { name: 'rear_bumper', panels: [{ name: 'bump' }] }] };
+  const brief = (where) => ({ analysis: { layers: [{ kind: 'logo', what: 'Monster claw', where }] } });
+  const design = (panel) => ({ textures: { ext_main: { elements: [{ panel, image: 'claw', covers: 'claw' }] } } });
+  const miss = (where, panel) => coverage(design(panel), brief(where), regions).filter((m) => /says "/.test(m));
+  assert.equal(miss('rear', 'hoodp').length, 1);                // "rear" alone needs something at the back
+  assert.equal(miss('rear', 'bump').length, 0);
+  assert.equal(miss('rear quarter', 'sidep').length, 0);        // the side answers it; no demand for the rear bumper
+  assert.equal(miss('quarter', 'hoodp').length, 1);
+  assert.equal(miss('front fender', 'sidep').length, 1);        // the fender is on the hood region
+  assert.equal(miss('front fender', 'hoodp').length, 0);
+  assert.equal(miss('rear fender', 'sidep').length, 0);         // not the front fender
 });
 
 test('decal: a wide image on a 90 or 270 degree panel keeps its proportions (regression: sharp rotated before resizing)', async () => {

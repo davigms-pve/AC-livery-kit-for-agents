@@ -234,7 +234,7 @@ export function designWarnings(design, profile) {
         covered += makePattern(e.pattern, { widthM: w, heightM: h, pxPerM: 1, seed: patternSeed(e, name), density: e.density ?? DEFAULT_DENSITY, color }).coverage * w * h; area += w * h;
       }
       const shift = area ? (covered / area) * contrast : 0, where = `${role}.elements[${i}] ${e.pattern}`;
-      if (contrast > limit.strokeContrast) out.push(`${where}: marks are too strong (contrast ${contrast.toFixed(2)}, discreet is up to ${limit.strokeContrast}). Use a colour closer to the body or lower "opacity".`);
+      if (contrast > limit.strokeContrast) out.push(`${where}: marks are too strong (contrast ${contrast.toFixed(2)}, discreet is up to ${limit.strokeContrast}). Now: colour ${color}, opacity ${opacity}${e.opacity === undefined ? ` (the default for ${e.pattern}; the design does not set it)` : ''}. Use a colour closer to the body or lower "opacity".`);
       if (shift > limit.meanShift) out.push(`${where}: covers about ${(100 * covered / area).toFixed(1)}% of the panels and would darken the body by ${(100 * shift).toFixed(1)}% (discreet is up to ${100 * limit.meanShift}%). Lower "density".`);
     });
   }
@@ -312,7 +312,10 @@ const words = (s) => String(s ?? '').toLowerCase().split(/[^a-z0-9]+/).filter((w
 /** Location words in an analysis layer's "where", with a test for the car's region names. A region the car does not have is ignored. */
 const PLACES = [
   ['hood', /\b(hood|bonnet)\b/i, /hood|bonnet/i], ['roof', /\broof\b/i, /roof/i], ['doors', /\b(doors?|sides?|sills?)\b/i, /side|door/i],
-  ['wing', /\b(wing|endplates?|spoiler)\b/i, /wing/i], ['rear', /\b(rear (bumper|deck|window)|tail|deck|diffuser)\b/i, /rear|tail/i],
+  ['wing', /\b(wing|endplates?|spoiler)\b/i, /wing/i],
+  // "rear" alone means the back of the car; "rear quarter", "rear fender", "rear wheel" and the like are on the side, so they are left to those words.
+  ['rear', /\b(rear (bumper|deck|window)|tail|deck|diffuser)\b|\brear\b(?!\s+(quarters?|fenders?|wheels?|doors?|sides?|view|three))/i, /rear|tail/i],
+  ['quarter', /\bquarters?\b/i, /side|quarter/i], ['fender', /\b(?<!rear )fenders?\b/i, /fender/i],
   ['nose', /\b(nose|front bumper|splitter|grille)\b/i, /front_bumper|nose|front/i], ['mirrors', /\bmirrors?\b/i, /mirror/i],
 ];
 const places = (where) => PLACES.filter(([, inWhere, inRegion]) => inRegion && inWhere.test(String(where ?? ''))).map(([name, , inRegion]) => ({ name, inRegion }));

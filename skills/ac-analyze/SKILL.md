@@ -43,7 +43,7 @@ aclivery brief set <slug> analysis '{"summary":"...","layers":[...],"overlapRule
 - Write the analysis into the brief as the JSON above, one object per layer:
   `{"kind":"tonal-art","what":"grey ink feathers","where":"all body panels","tone":"subtle","confidence":"medium","evidence":"a.jpg left, door and rear quarter","notes":"slightly darker than body, denser near the doors"}`.
   Kinds: `base large-graphic tonal-art accent marking logo text plate`. Tone: `subtle` or `bold`.
-- **Write `where` with the car's own words** (hood, roof, doors, sills, rear, wing, nose, mirrors): `apply`'s review checks that something is placed in each place you name ("claw: hood, roof, doors" fails if the roof has none).
+- **Write `where` with the car's own words** (hood, front fender, roof, doors, sills, quarter, rear, wing, nose, mirrors; "rear" alone means the back of the car, "rear quarter" and "rear fender" mean the side): `apply`'s review checks that something is placed in each place you name ("claw: hood, roof, doors" fails if the roof has none).
   Give a design element `"covers": "<word from the layer>"` when its name does not match the layer.
 - **Then give every layer a `source`** (the next `brief show` step asks for it): `fetch` = a brand mark or logo that exists as a file (the claw, MOTUL, GoPro, PORSCHE, a club crest): never redraw it; `generate` = livery art with no file (grey leaves, vines, cracks, splatter: `pattern` placeholders);
   `construct` = text, numbers, plates, solid colours the kit draws; `stock` = already on the car's own texture (the N/E stickers); `skip` = leave out, with `why` and a decision. For `fetch`, set `asset` to the prepared file once it exists.

@@ -8,7 +8,7 @@ license: PolyForm-Noncommercial-1.0.0
 # Render
 
 ```
-aclivery render <car> --skin <folder-or-file> [--views left,right,top] [--each] [--probe panelA,panelB]
+aclivery render <car> --skin <folder-or-file> [--views left,right,top] [--each] [--probe panelA,panelB]     (with --each, --out is a folder, not a file)
 ```
 
 Draws the car with your textures, no GPU or game needed, about 2 s per view. Output is **one contact-sheet PNG**

@@ -18,7 +18,7 @@ export const help = `aclivery render <car> (--skin <dir|file> | --regions) [--vi
   --probe  paint these panels flat magenta first, to see where a panel lands. Needs --texture if not the body.
   --regions  no skin needed: paint each named region of the car a different colour and print the legend. Use it to
            learn the layout and let the user point at the part they mean.
-  --each   one PNG per view instead of a contact sheet.
+  --each   one PNG per view instead of a contact sheet. With --out, give a FOLDER (it gets <view>.png per view), not a file.
   Limits: no reflections or normal maps; textures other than the ones you pass show the car's own stock art.`;
 
 async function loadOverride(file, maxSize = 4096) {
@@ -46,6 +46,7 @@ export async function run(argv) {
   const { flags, positional } = parseArgs(argv, { bools: ['each', 'json'] });
   const [carId] = positional;
   if (!carId || !(flags.skin || flags.regions)) throw new UsageError(help);
+  if (flags.each && /\.(png|jpe?g|webp)$/i.test(String(flags.out ?? ''))) throw new UsageError(`--each writes one PNG per view (<view>.png) into a folder, so --out must be a folder, not a file (${flags.out}). Drop --each for one contact sheet in a file, or give a folder.`);
   const pack = loadPack(carId);
   const kn5 = path.resolve(flags.kn5 ?? pack.meta?.kn5 ?? '');
   if (!fs.existsSync(kn5)) throw new UsageError(`car model not found at ${kn5}. Pass --kn5 <path>, or re-run: aclivery car prep <kn5>`);
