@@ -10,6 +10,19 @@ refer to them in commits and the brief.
 
 - **Milestone:** M1 = a small cloud model (Haiku) does the use case well enough from the repo alone (`docs/milestones.md`, run with `eval/haiku-run.md`,
   judged with `eval/rubric.md`). **Hermes trials are parked** until M1 passes (owner's decision, 2026-10-21).
+- **Open items register (the close-out rule is in `AGENTS.md`).** Every open item has an owner and a condition that closes it. Review this list at the start and the end of each session; add new items here, not only in the chat. Last reviewed 2026-10-23.
+
+  | # | Open item | Owner | Closes when |
+  |---|---|---|---|
+  | O1 | Door plate card missing in the game (B7): ask the brother which car config holds the plate and what it contains | owner | the answer is recorded in `cars/<id>/notes.md` and B7, and the plate is seen in the game (or the plate is declared not a skin job) |
+  | O2 | B18: ask the livery team for the original art (claw SVG, leaf art, lockups). Not sent | owner | the message is sent and the reply (or "no reply by <date>") is recorded |
+  | O3 | Porsche crest (fender, nose): needs a real crest file, fetch only with the owner's yes | owner says yes, then agent | the crest is placed, or the owner declines (then record a decision) |
+  | O4 | Placeholder art: leaf art, vines, splatter, SC discs, DELS dot-matrix lettering | agent, needs the sources from O2/O3 | each is real art, or listed as a placeholder in the final report |
+  | O5 | Hermes (M2) trials: "maybe" | owner | an explicit yes (then run) or no (then park in `docs/milestones.md`) |
+  | O6 | Quick wins 3 to 7 under "Where we stopped" (section 3) | agent | each done with a test, or dropped with a reason |
+  | O7 | Smaller Opus items: overlap guard on outlines, "rear" as a place word, a keep-clear mask for patterns, `logo prep --flip --grey`, a clear `render --each --out file.png` error | agent | built with a test, or dropped with a reason |
+  | O8 | Rerun Haiku with the staged flow (M1) and record the score in `eval/runs/` | agent | the run is scored and written up |
+
 - **Order of things, requirements and tools:** `docs/workflow-map.md`. **Story and reasoning of the first session:** `docs/session-log/2026-10-21.md`.
 - **TOMORROW (owner's plan, end of 2026-10-22):** (1) resume optimizing the kit for **Haiku** with the ordered quick wins under "Where we stopped" below, then rerun Haiku with the staged flow (the flow is built and tested with synthetic cars, never tried with a model); (2) **maybe** some **Hermes** runs with the local model (M2): the owner said "maybe"; ask for the explicit go-ahead before touching Hermes (see `docs/milestones.md`); (3) ask the brother where the door plate lives (a config?). The first in-game check passed: the Opus build loads and looks right, apart from the plate (B7).
 - **Next session starts with (2026-10-22):** read `docs/agent-flow.md` (the seven stages and where the agent remembers things), then `eval/runs/` (4 Haiku runs: 29, 33, 34, 35 of 40 by the builder's scoring). The staged flow (a `source` per layer, `brief show` walking the stages, `apply --only`) is built and tested with synthetic cars but **not yet re-run with a model**: that is the next M1 run. Open art: the Porsche crest, real leaf art, SC discs, DELS lettering; B18 (ask the livery team for the originals) is still unsent. Everything is on `main` on GitHub.
@@ -147,8 +160,8 @@ artwork). Treat it as a required layer, not a missing asset. Logos must not over
 - [x] **German flag** is now in the quarter window (shared glass texture; stripes stacked along the texture's x so they read horizontal; symmetric, so mirroring is harmless), not on the roof strip.
 - [x] **Opus run (2026-10-22): 37/40** (`eval/runs/2026-10-22-opus-1.md`): the kit works end to end for a high-performance model. Its 10 process recommendations are listed there; open ones to do next: the overlap guard on outlines instead of bounding boxes, count only full builds as rounds, "rear" as a place word, a keep-clear mask for patterns, a logo mirror/greyscale option, a clear error for `render --each --out file.png`.
 - [ ] **Where we stopped (2026-10-22, night): the Opus plan is saved, none of it is built.** Quick wins found while reading the code, in the order to do them (each is small, each needs a test):
-  1. one round rule everywhere ("at least 3 full-build rounds; more are fine"): `docs/agent-flow.md` stage 6, `skills/ac-livery` step 6 ("Three rounds, then stop"), `skills/ac-apply` ("2 to 3 rounds"), the `next:` line in `src/commands/apply.mjs`, `ROUNDS` in `src/commands/brief.mjs`;
-  2. no elements list anywhere: `skills/ac-analyze` lines 62-68 still say `brief add elements`; `docs/workflow-map.md` stage 4 exit text;
+  1. [x] (2026-10-23) one round rule everywhere ("at least 3 rounds; more are fine"): `docs/agent-flow.md` stage 6, `skills/ac-livery` step 6, `skills/ac-apply`, the `next:` line in `src/commands/apply.mjs`, the plan line in `src/commands/brief.mjs` (test updated). The word "full-build" comes with item 3, when `apply --only` stops counting;
+  2. [x] (2026-10-23) no elements list in the skills or docs: `skills/ac-analyze` and `docs/workflow-map.md` stage 4 now point at the layer `source` and `design.json`. (The `elements` list stays in `brief.mjs` only for old briefs.)
   3. count only full builds as rounds (`apply --only` must not bump `brief.build.round`; the brief then asks for a full build) and save the output folder in `brief.build.out`, used as the default `--out`;
   4. a done state in `brief show` (write the report, list placeholders and what is not verified in the game); skipped layers show "skipped: why" and are left out of the coverage check;
   5. `render --each --out x.png` must say it needs a folder; place words "rear" and "quarter" and "fender" in `PLACES` (`apply.mjs`); the opacity warning prints the pattern's default;

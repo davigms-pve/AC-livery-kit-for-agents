@@ -528,7 +528,7 @@ export async function run(argv) {
         fs.writeFileSync(bf, JSON.stringify(bj, null, 1));
       } catch { /* the brief is optional */ }
     }
-    if (!flags['no-render']) console.log('  next: open ' + (design.brief ? 'compare.png' : 'sheet.png') + ', first fix every "missing" line (add the element, or record a decision in the brief for leaving it out), then name the 3 to 5 biggest differences from the references (the wrong size, the wrong place, too faint), change those in the design file, run apply again. Stop when the differences are small, or after 3 rounds.');
+    if (!flags['no-render']) console.log('  next: open ' + (design.brief ? 'compare.png' : 'sheet.png') + ', first fix every "missing" line (add the element, or record a decision in the brief for leaving it out), then name the 3 to 5 biggest differences from the references (the wrong size, the wrong place, too faint), change those in the design file, run apply again. Do at least 3 rounds; more are fine while the differences are big, stop when they are small.');
   }
 
   if (flags.export) {

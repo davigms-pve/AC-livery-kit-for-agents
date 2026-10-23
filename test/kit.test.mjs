@@ -674,7 +674,7 @@ test('brief plan: NEXT walks sourcing, fetch assets, the design build, the missi
   b.build = { round: 1, missing: 2, elements: 10, cutOff: 0, exported: false };
   assert.match(next(b).do, /left 2 layer\(s\) missing/);
   b.build.missing = 0;
-  assert.match(next(b).do, /rounds done: 1 of 3/);
+  assert.match(next(b).do, /rounds done: 1 of at least 3/);
   b.build.round = 3;
   assert.match(next(b).do, /export: aclivery apply <design> --export/);
   b.build.exported = true;

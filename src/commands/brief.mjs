@@ -125,7 +125,7 @@ export function gaps(b, { packExists = false, fileExists = (p) => fs.existsSync(
       if (!pending && !b.build) todo.push({ ask: null, do: `build in parts: write the design file (one element per layer; set "brief": "${b.slug ?? '<slug>'}"; give each element "covers": "<layer word>"), then aclivery apply <design.json> --check, then apply. Part 1: the body texture (aclivery apply ... --only ext_main), then the other textures (plates, banner, glass, grille).` });
       else if (!pending && b.build) {
         if (b.build.missing > 0) todo.push({ ask: null, do: `the last build left ${b.build.missing} layer(s) missing: run aclivery apply <design> --check, fix every "missing:" line (add the element, or record a decision), then build again` });
-        else if ((b.build.round ?? 0) < ROUNDS) todo.push({ ask: null, do: `rounds done: ${b.build.round} of ${ROUNDS}. Look at compare.png, name the 3 to 5 biggest differences from the references, fix those in the design, apply again` });
+        else if ((b.build.round ?? 0) < ROUNDS) todo.push({ ask: null, do: `rounds done: ${b.build.round} of at least ${ROUNDS} (more are fine while the differences are big). Look at compare.png, name the 3 to 5 biggest differences from the references, fix those in the design, apply again` });
         else if (!b.build.exported) todo.push({ ask: null, do: 'export: aclivery apply <design> --export, then aclivery validate skin <dist folder>/<Name>' });
       }
     }

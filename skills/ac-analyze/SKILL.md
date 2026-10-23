@@ -59,10 +59,10 @@ aclivery brief set <slug> analysis '{"summary":"...","layers":[...],"overlapRule
   small script near the roof (b.jpg front): what is it?"). Ask it; do not build a guess into the livery. Record the answer in the brief.
 - **Self-check before you place anything:** re-read each layer as if someone else wrote it. Could you point to the photo? Did you mix up two
   similar marks? Did you split symbol and wordmark? Are numbers or lettering in a made-up style (note the style: italic, stencil, brush)?
-- Then turn each layer into one or more brief elements (`aclivery brief add <slug> elements ...`) with a panel target.
-  `aclivery brief show <slug>` will insist that subtle layers have an element.
+- Do not keep a list of elements in the brief. The layers are the plan: the next step gives each layer a `source` (`fetch`, `generate`, `construct`, `stock` or `skip` with a `why`),
+  and `design.json` holds the placement (`docs/agent-flow.md`). `aclivery brief show <slug>` will not accept a skipped layer without a `why`.
 
 ## Output check
 
-Before you start placing: the brief has an analysis with a layer for every kind you can see, each subtle layer has an
-element, and you can say in one sentence what makes this livery recognisable.
+Before you start placing: the brief has an analysis with a layer for every kind you can see, each subtle layer has a `source`
+(it is generated or fetched, not dropped), and you can say in one sentence what makes this livery recognisable.

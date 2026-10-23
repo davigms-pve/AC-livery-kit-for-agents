@@ -15,6 +15,15 @@ Rules for AI agents working **on this repo** (building the kit). For agents *usi
 - Mark every claim in docs as verified (by us, from a file or a run) or unverified (a write-up, a forum, memory).
   Do not state a game behaviour as fact unless it was tested in the game.
 
+## Open items
+
+- `docs/TODO.md` section 0 holds the **open items register**. Nothing that is still open may live only in the chat or in a memory note.
+- At the start of a session, show the register and the next step. Before ending a session, or whenever the user reports something new
+  (a game result, an answer, a decision), update the register in the same turn: close what is closed (say how it was verified),
+  add what is new with an owner and a closing condition, and keep the dates.
+- Items that wait on the user (a question to ask someone, a download to approve) stay in the register until the user answers. Say so at
+  the next start; do not drop them silently and do not act on them without the answer.
+
 ## Working
 
 ```
