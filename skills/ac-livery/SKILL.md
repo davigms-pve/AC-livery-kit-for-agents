@@ -25,7 +25,7 @@ The brief is your only memory. After EVERY step run `aclivery brief show <slug>`
 3. **Sourcing plan**: set `source` on every layer: `fetch` (a brand mark that exists as a file: never redraw it), `generate` (livery art with no file: a pattern placeholder), `construct` (text, numbers, plates, colours), `stock` (already on the car), `skip` (with `why`).
 4. **Assets** (`ac-logos`): for every `fetch` layer find the brand's file in `assets/logos`, cut the mark out with `logo prep`, set the layer's `asset`. No file: ask the user for a source to download from; wait for the yes.
 5. **Build in parts** (`ac-apply`, `ac-panels`): write `design.json` (`"brief": "<slug>"`, a `covers` word per element), `apply --check`, then `apply --only ext_main`, then the other textures.
-6. **Fix rounds** (`ac-render`): `apply` prints a review. Fix every `missing:` line first, then the 3 to 5 biggest differences in `compare.png`. Do at least three rounds; more are fine while the differences are big, stop when they are small.
+6. **Fix rounds** (`ac-render`): `apply` prints a review. Fix every `missing:` line first, then the 3 to 5 biggest differences in `compare.png`. Do at least three full-build rounds (a part build with `--only` does not count); more are fine while the differences are big, stop when they are small.
 7. **Ship** (`ac-skin-export`): `apply --export`, `validate skin`, then the report. A skin that was never packaged is not finished.
 
 ## Rules

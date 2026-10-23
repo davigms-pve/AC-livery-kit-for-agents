@@ -15,13 +15,15 @@ import { run as exportSkin } from './export.mjs';
 import { decodeTexture } from '../engine.mjs';
 import { PATTERNS, TONAL, DEFAULTS, DEFAULT_DENSITY, DISCREET, makePattern, renderPattern, luma } from '../lib/patterns.mjs';
 
-export const help = `aclivery apply <design.json> [--out dir] [--check] [--no-render] [--export]
+export const help = `aclivery apply <design.json> [--out dir] [--only role,...] [--check] [--no-render] [--export]
   Builds the whole skin from one design file: prepares the assets, draws every element in layer order, renders a
   contact sheet. The file is checked first; every problem is listed before anything is drawn. Same file, same skin.
     --check      only check the file (panels, assets, colours, boxes), print where every element lands and about how big, and stop
     --no-render  skip the contact sheet and the reference comparison
     --export     also write ui_skin.json + preview.jpg and encode DDS + zip for Content Manager
-    --out        build folder (default assets/builds/<name>): work/ (PNG textures), sheet.png, dist/
+    --only       rebuild just these textures and leave the others as they were. A part build is not a round and cannot export
+    --out        build folder: work/ (PNG textures), sheet.png, dist/. Default: the folder the brief remembers from the last build
+                 (build.out), else assets/builds/<name>
   Design file (JSON). Paths are relative to the repo root. Unknown keys are errors.
     { "car": "<id>", "name": "Skin name", "brief": "<slug, optional: compare with its references>",
       "colors":   { "accent": "#336699" },
@@ -408,7 +410,9 @@ export async function run(argv) {
     if (flags.export) throw new UsageError('--only builds part of the skin; export needs a full build: run apply without --only, then with --export');
   }
   const name = design.name ?? path.parse(file).name;
-  const out = path.resolve(flags.out ?? path.join(root, 'assets', 'builds', slug(name)));
+  const savedOut = brief?.build?.out;
+  const out = path.resolve(flags.out ?? savedOut ?? path.join(root, 'assets', 'builds', slug(name)));
+  if (flags.out && savedOut && path.resolve(savedOut) !== out) console.log(`note: the brief remembered ${savedOut}; this build goes to ${out} and the brief will remember that one now`);
   const work = path.join(out, 'work'), marker = path.join(work, '.aclivery-work');
   if (fs.existsSync(work) && !fs.existsSync(marker) && fs.readdirSync(work).length) {
     throw new UsageError(`${work} exists and was not made by apply. Pass another --out (output of an old build script can simply be deleted).`);
@@ -505,17 +509,18 @@ export async function run(argv) {
     }
   }
 
-  // The fix loop: a build is one round. The review names what to look at and what to fix next, so a model repeats look-fix-build a few times.
+  // The fix loop: a full build is one round; a part build (--only) is not. The review names what to look at and what to fix next, so a model repeats look-fix-build a few times.
   {
     const roundFile = path.join(out, '.rounds.json');
-    let round = (brief?.build?.round ?? 0) + 1;
-    if (!brief) { try { round = (JSON.parse(fs.readFileSync(roundFile, 'utf8')).round ?? 0) + 1; } catch { round = 1; } }
+    let done = brief?.build?.round ?? 0;
+    if (!brief) { try { done = JSON.parse(fs.readFileSync(roundFile, 'utf8')).round ?? 0; } catch { done = 0; } }
+    const round = only ? done : done + 1;
     fs.writeFileSync(roundFile, JSON.stringify({ round }));
     const byLayer = {};
     for (const t of Object.values(design.textures)) for (const e of t.elements) byLayer[layerOf(e)] = (byLayer[layerOf(e)] ?? 0) + 1;
     const rows = await placementTable(design, pack.profile, assetFile);
     const cut = rows.filter((r) => r.includes('cut off')), layers = Object.entries(byLayer).map(([k, n]) => `${k} ${n}`).join(', ');
-    console.log(`review, round ${round}: ${Object.keys(design.textures).length} texture(s) [${Object.keys(design.textures).join(', ')}], elements by layer: ${layers}; ${warnings.length} warning(s), ${cut.length} element(s) cut off, ${missing.length} layer(s) missing`);
+    console.log(`review, ${only ? `part build [${only.join(', ')}], not a round (rounds done: ${round})` : `round ${round}`}: ${Object.keys(design.textures).length} texture(s) [${Object.keys(design.textures).join(', ')}], elements by layer: ${layers}; ${warnings.length} warning(s), ${cut.length} element(s) cut off, ${missing.length} layer(s) missing`);
     for (const r of cut) console.log('  fix: ' + r.trim().slice(0, 230));
     for (const w of warnings) console.log('  fix: ' + w.slice(0, 230));
     for (const m of missing) console.log('  missing: ' + m.slice(0, 260));
@@ -523,12 +528,13 @@ export async function run(argv) {
       try {   // keep the brief in step with the build
         const bf = path.join(home(), 'projects', String(design.brief), 'brief.json'), bj = JSON.parse(fs.readFileSync(bf, 'utf8'));
         const prevBuild = bj.build ?? {};
-        for (const [i, l] of (bj.analysis?.layers ?? []).entries()) { if (answered.includes(i)) l.built = { round }; else delete l.built; }
-        bj.build = { design: path.relative(root, path.resolve(file)).replace(/\\\\/g, '/'), round, textures: Object.keys(design.textures), elements: count, missing: missing.length, cutOff: cut.length, exported: !!flags.export || !!prevBuild.exported, part: only ? only.join(',') : null, at: new Date().toISOString() };
+        for (const [i, l] of (bj.analysis?.layers ?? []).entries()) { if (answered.includes(i)) l.built = only ? { round, part: true } : { round }; else delete l.built; }
+        bj.build = { design: path.relative(root, path.resolve(file)).replace(/\\\\/g, '/'), out, round, textures: Object.keys(design.textures), elements: count, missing: missing.length, cutOff: cut.length, exported: !!flags.export || !!prevBuild.exported, part: only ? only.join(',') : null, at: new Date().toISOString() };
         fs.writeFileSync(bf, JSON.stringify(bj, null, 1));
       } catch { /* the brief is optional */ }
     }
-    if (!flags['no-render']) console.log('  next: open ' + (design.brief ? 'compare.png' : 'sheet.png') + ', first fix every "missing" line (add the element, or record a decision in the brief for leaving it out), then name the 3 to 5 biggest differences from the references (the wrong size, the wrong place, too faint), change those in the design file, run apply again. Do at least 3 rounds; more are fine while the differences are big, stop when they are small.');
+    if (only) console.log(`  next: a part build is not a round. Build the other textures the same way, then run apply without --only: that full build is round ${round + 1}.`);
+    else if (!flags['no-render']) console.log('  next: open ' + (design.brief ? 'compare.png' : 'sheet.png') + ', first fix every "missing" line (add the element, or record a decision in the brief for leaving it out), then name the 3 to 5 biggest differences from the references (the wrong size, the wrong place, too faint), change those in the design file, run apply again. Do at least 3 rounds; more are fine while the differences are big, stop when they are small.');
   }
 
   if (flags.export) {

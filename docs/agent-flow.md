@@ -25,7 +25,7 @@ The brief (`.aclivery/projects/<slug>/brief.json`) is the **only** memory. `acli
 | 3 Sourcing plan | give **every layer a `source`**: `fetch` / `generate` / `construct` / `stock` / `skip` (+ `why`). The default is suggested from the kind (brand mark: fetch; tonal art: generate; text: construct; markings: stock) | `analysis.layers[].source` | all layers have a source |
 | 4 Assets | for each `fetch` layer follow the search procedure of `ac-logos` (look locally, search, propose ONE candidate with its exact URL, wait for the yes, fetch, look at it, cut it out with `logo prep`, set `layers[].asset`, write the source down). No file: ask the user; never download without a yes; a placeholder only if the user says so | `analysis.layers[].asset` | every `fetch` layer has a real file |
 | 5 Build in parts | write `design.json` with `"brief": "<slug>"` and a `covers` word per element; `apply --check`; build **body first** (`--only ext_main`), then the other textures (`door_plates`, `hr_generic`, `glass_2`, `le_god_grille`) | `design.json`, `brief.build` | a build exists |
-| 6 Fix rounds (at least 3) | each `apply` prints a review: `missing:` layers, cut-off elements with the nearest box, warnings; fix those, then the 3 to 5 biggest differences seen in `compare.png` | `brief.build.round`, `analysis.layers[].built` | no layer missing and at least 3 rounds done |
+| 6 Fix rounds (at least 3 full builds; `--only` part builds do not count) | each `apply` prints a review: `missing:` layers, cut-off elements with the nearest box, warnings; fix those, then the 3 to 5 biggest differences seen in `compare.png` | `brief.build.round`, `analysis.layers[].built` | no layer missing and at least 3 full-build rounds done |
 | 7 Ship | `apply --export`, `validate skin`, then the report (what is placeholder, what was not verified in the game) | `brief.build.exported` | exported |
 
 Rules that cross stages: never redraw a brand mark; never download without a yes; logos do not overlap unless a reference shows it; a `skip` needs a `why` and a decision; say what is not verified in the game.
@@ -34,7 +34,7 @@ Rules that cross stages: never redraw a brand mark; never download without a yes
 
 - `references`, `analysis.layers[]` (with `source`, `asset`, `why`, `built`): the plan. `brief show` prints it as a table (`L3 [fetch] Monster claw FILE MISSING not built`).
 - `decisions`: every default the agent chose in place of asking the user (it cannot ask in a batch run).
-- `build`: written by `apply` (round, elements, missing layers, cut-off elements, exported). The design file stays the source of truth for placement.
+- `build`: written by `apply` (round = full builds only, output folder `out` reused as the default `--out`, `part` when the last build was an `--only` build, elements, missing layers, cut-off elements, exported). The design file stays the source of truth for placement.
 - `cars/<id>/notes.md` (in the repo): what is known about the car: panels, textures, pitfalls, a "complete skin" checklist. Read first.
 - Not memory: the conversation. Anything only in the conversation is lost at the next context reset.
 

@@ -19,7 +19,7 @@ refer to them in commits and the brief.
   | O3 | Porsche crest (fender, nose): needs a real crest file, fetch only with the owner's yes | owner says yes, then agent | the crest is placed, or the owner declines (then record a decision) |
   | O4 | Placeholder art: leaf art, vines, splatter, SC discs, DELS dot-matrix lettering | agent, needs the sources from O2/O3 | each is real art, or listed as a placeholder in the final report |
   | O5 | Hermes (M2) trials: "maybe" | owner | an explicit yes (then run) or no (then park in `docs/milestones.md`) |
-  | O6 | Quick wins 3 to 7 under "Where we stopped" (section 3) | agent | each done with a test, or dropped with a reason |
+  | O6 | Quick wins 4 to 7 under "Where we stopped" (section 3; 1 to 3 done 2026-10-23) | agent | each done with a test, or dropped with a reason |
   | O7 | Smaller Opus items: overlap guard on outlines, "rear" as a place word, a keep-clear mask for patterns, `logo prep --flip --grey`, a clear `render --each --out file.png` error | agent | built with a test, or dropped with a reason |
   | O8 | Rerun Haiku with the staged flow (M1) and record the score in `eval/runs/` | agent | the run is scored and written up |
 
@@ -162,7 +162,7 @@ artwork). Treat it as a required layer, not a missing asset. Logos must not over
 - [ ] **Where we stopped (2026-10-22, night): the Opus plan is saved, none of it is built.** Quick wins found while reading the code, in the order to do them (each is small, each needs a test):
   1. [x] (2026-10-23) one round rule everywhere ("at least 3 rounds; more are fine"): `docs/agent-flow.md` stage 6, `skills/ac-livery` step 6, `skills/ac-apply`, the `next:` line in `src/commands/apply.mjs`, the plan line in `src/commands/brief.mjs` (test updated). The word "full-build" comes with item 3, when `apply --only` stops counting;
   2. [x] (2026-10-23) no elements list in the skills or docs: `skills/ac-analyze` and `docs/workflow-map.md` stage 4 now point at the layer `source` and `design.json`. (The `elements` list stays in `brief.mjs` only for old briefs.)
-  3. count only full builds as rounds (`apply --only` must not bump `brief.build.round`; the brief then asks for a full build) and save the output folder in `brief.build.out`, used as the default `--out`;
+  3. [x] (2026-10-23) count only full builds as rounds (`apply --only` does not bump `brief.build.round`; `brief show` then asks for a full build, and prints "part build") and the output folder is saved in `brief.build.out`, used as the default `--out` (an explicit different `--out` is allowed, prints a note, and becomes the remembered one). One new test (42 total);
   4. a done state in `brief show` (write the report, list placeholders and what is not verified in the game); skipped layers show "skipped: why" and are left out of the coverage check;
   5. `render --each --out x.png` must say it needs a folder; place words "rear" and "quarter" and "fender" in `PLACES` (`apply.mjs`); the opacity warning prints the pattern's default;
   6. `decal` overlap guard: compare only art on the SAME panel and skip paint-on-paint (then update the test that places two colours); `compare --each` and `--crop`; `logo prep --flip --grey`;

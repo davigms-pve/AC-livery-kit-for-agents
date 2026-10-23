@@ -673,6 +673,9 @@ test('brief plan: NEXT walks sourcing, fetch assets, the design build, the missi
   // 4. a build with missing layers, then rounds, then export, then done
   b.build = { round: 1, missing: 2, elements: 10, cutOff: 0, exported: false };
   assert.match(next(b).do, /left 2 layer\(s\) missing/);
+  b.build.part = 'ext_main';   // a part build is not a round: the brief asks for a full build first
+  assert.match(next(b).do, /last build was a part \(--only ext_main\).*not a round \(rounds done: 1\).*that full build is round 2/);
+  b.build.part = null;
   b.build.missing = 0;
   assert.match(next(b).do, /rounds done: 1 of at least 3/);
   b.build.round = 3;
@@ -698,4 +701,40 @@ test('apply --only rebuilds the chosen textures and leaves the others as they we
   assert.deepEqual(plate(10, 10), [255, 0, 255, 255]);      // untouched, still there
   assert.match(run(['apply', file, '--only', 'nope', '--out', out], env).stderr, /no such texture in the design: nope/);
   assert.match(run(['apply', file, '--only', 'ext_main', '--export', '--out', out], env).stderr, /export needs a full build/);
+});
+
+test('apply: only full builds count as rounds, and the brief remembers the output folder', async () => {
+  const home = tmp(); applyCar(home, 'rd');
+  const dir = tmp(), env = { ACLIVERY_HOME: home }, out = path.join(dir, 'o'), file = path.join(dir, 'd.json');
+  const pdir = path.join(home, 'projects', 'rd'); fs.mkdirSync(pdir, { recursive: true });
+  fs.writeFileSync(path.join(pdir, 'brief.json'), JSON.stringify({ slug: 'rd' }));
+  const textures = { ext_main: { fill: '#ffffff', elements: [{ panel: 'a', color: '#ff0000', at: [0, 0, 0.5, 0.5] }] }, plates: { fill: '#000000', elements: [{ panel: 'whole', color: '#ff00ff', at: [0, 0, 0.5, 0.5] }] } };
+  fs.writeFileSync(file, JSON.stringify({ car: 'rd', brief: 'rd', textures }));
+  const saved = () => JSON.parse(fs.readFileSync(path.join(pdir, 'brief.json'), 'utf8'));
+  // a part build first: round stays 0, the folder and the part are written to the brief
+  const part = run(['apply', file, '--no-render', '--only', 'ext_main', '--out', out], env);
+  assert.equal(part.status, 0, part.stderr);
+  assert.match(part.stdout, /review, part build \[ext_main\], not a round \(rounds done: 0\)/);
+  assert.match(part.stdout, /next: a part build is not a round.*that full build is round 1/);
+  assert.deepEqual([saved().build.round, saved().build.part, saved().build.out], [0, 'ext_main', out]);
+  // a full build with no --out goes to the remembered folder and is round 1
+  const full = run(['apply', file, '--no-render'], env);
+  assert.match(full.stdout, /review, round 1:/);
+  assert.ok(fs.existsSync(path.join(out, 'work', 'Plates.png')), 'built into the remembered folder');
+  assert.deepEqual([saved().build.round, saved().build.part], [1, null]);
+  // another part build leaves the count alone
+  assert.match(run(['apply', file, '--no-render', '--only', 'plates'], env).stdout, /not a round \(rounds done: 1\)/);
+  assert.equal(saved().build.round, 1);
+  // an explicit different --out is allowed, says so, and becomes the remembered one
+  const out2 = path.join(dir, 'o2');
+  const moved = run(['apply', file, '--no-render', '--out', out2], env);
+  assert.match(moved.stdout, /note: the brief remembered .*this build goes to/);
+  assert.match(moved.stdout, /review, round 2:/);
+  assert.equal(saved().build.out, out2);
+  // without a brief the count lives in the output folder and follows the same rule
+  const file2 = path.join(dir, 'e.json'), out3 = path.join(dir, 'o3');
+  fs.writeFileSync(file2, JSON.stringify({ car: 'rd', textures }));
+  assert.match(run(['apply', file2, '--no-render', '--out', out3], env).stdout, /review, round 1:/);
+  assert.match(run(['apply', file2, '--no-render', '--only', 'plates', '--out', out3], env).stdout, /not a round \(rounds done: 1\)/);
+  assert.match(run(['apply', file2, '--no-render', '--out', out3], env).stdout, /review, round 2:/);
 });
