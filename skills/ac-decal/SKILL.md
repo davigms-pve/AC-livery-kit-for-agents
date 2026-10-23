@@ -45,4 +45,4 @@ aclivery car size <car> door_plates 2048x640
   or a working skin); the decal command refuses a base with the wrong aspect ratio.
 - `--under` marks quiet background art (tonal ink): logos may sit on it, so the overlap guard ignores it. `aclivery apply` does this for `"layer": "tone"`.
 - The overlap guard compares art on the SAME panel only, and a solid `--color` is background: a logo may sit on a colour and a colour on a colour, but a colour placed over a logo is refused.
-- Use `--color` to paint a whole panel a solid colour (mirrors, wing endplates).
+- `--color` paints a solid block: with no `--at` it fills the panel's island (it clears the pixels that belong to another panel's island inside the same bounding box, so it does not flood a neighbour), with `--at` it paints exactly that box (mirrors, wing endplates, a stripe). Paint the colour first, then the art on it.

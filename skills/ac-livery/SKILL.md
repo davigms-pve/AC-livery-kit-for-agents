@@ -20,12 +20,12 @@ Give `--out` paths you can find again; without `--out`, renders go to `.aclivery
 
 The brief is your only memory. After EVERY step run `aclivery brief show <slug>`: it prints the next step from what is recorded. If you lose your thread, run it.
 
-1. **Intake** (`ac-intake`): car pack (`ac-car-prep`), references with a view each. Look for a flat side, a door close-up, the front, the rear and a top view.
+1. **Intake** (`ac-intake`): car pack (`ac-car-prep`), references with a view each (work the view out with `ac-read-photo`). Look for a flat side, a door close-up, the front, the rear and a top view.
 2. **Analysis** (`ac-analyze`): layers with `where` in the car's own words, `confidence` and `evidence`. Run `aclivery car notes <id>` first.
 3. **Sourcing plan**: set `source` on every layer: `fetch` (a brand mark that exists as a file: never redraw it), `generate` (livery art with no file: a pattern placeholder), `construct` (text, numbers, plates, colours), `stock` (already on the car), `skip` (with `why`).
 4. **Assets** (`ac-logos`): for every `fetch` layer find the brand's file in `assets/logos`, cut the mark out with `logo prep`, set the layer's `asset`. No file: ask the user for a source to download from; wait for the yes.
 5. **Build in parts** (`ac-apply`, `ac-panels`): write `design.json` (`"brief": "<slug>"`, a `covers` word per element), `apply --check`, then `apply --only ext_main`, then the other textures.
-6. **Fix rounds** (`ac-render`): `apply` prints a review. Fix every `missing:` line first, then the 3 to 5 biggest differences in `compare.png`. Do at least three full-build rounds (a part build with `--only` does not count); more are fine while the differences are big, stop when they are small.
+6. **Fix rounds** (`ac-render`, `ac-verify`): `apply` prints a review. Fix every `missing:` line first, then the 3 to 5 biggest differences in `compare.png`; check each element against a reference crop with `ac-verify`. Do at least three full-build rounds (a part build with `--only` does not count); more are fine while the differences are big, stop when they are small.
 7. **Ship** (`ac-skin-export`): `apply --export`, `validate skin`, then the report (`aclivery brief set <slug> report "<text>"`: placeholders, skipped layers and why, what is not verified in the game). `brief show` prints DONE only when both exist. A skin that was never packaged is not finished.
 
 ## Rules
