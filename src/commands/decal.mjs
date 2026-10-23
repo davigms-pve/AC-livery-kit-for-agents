@@ -13,7 +13,9 @@ export const help = `aclivery decal <car> --panel <name> (--image <png> | --colo
            image keeps its aspect ratio and is centred in that box.
   --color  paint the panel (or the --at box) a solid colour instead of placing an image, e.g. cyan mirrors.
   --label  a name for this placement in overlap messages (default: the image file name)
-  --overlap allow this to cover art already placed (default: refused, so logos never sit on each other by accident)
+  --overlap allow this to cover art already placed (default: refused, so logos never sit on each other by accident).
+           Only art on the SAME panel counts, and a solid --color is background, never "art that gets covered" (a logo may sit
+           on a colour, a colour may sit on a colour); a colour placed over a logo is still refused.
   --under  this is quiet background art (tonal ink, texture): it may sit under logos, so it skips the overlap check and is
            not remembered by it. Everything else is placed over it.
   --fill   start from a flat colour, or "transparent" (door plates and other cut-out textures) (paints the whole texture) instead of --base.
@@ -147,8 +149,11 @@ export async function run(argv) {
   const sidecar = `${flags.out}.placements.json`;
   const placed = flags.base && fs.existsSync(sidecar) ? JSON.parse(fs.readFileSync(sidecar, 'utf8')) : [];
   const mine = [left, top, pieceInfo.width, pieceInfo.height];
+  const isPaint = !!flags.color && !flags.image;
   if (!flags.overlap && !flags.under) {
     for (const p of placed) {
+      // Paint is background; and a panel's box can hold another panel's island (the P92's door lies in the rear quarter's box), so only the same panel is compared.
+      if (p.paint || p.panel !== flags.panel) continue;
       const ix = Math.max(0, Math.min(mine[0] + mine[2], p.box[0] + p.box[2]) - Math.max(mine[0], p.box[0]));
       const iy = Math.max(0, Math.min(mine[1] + mine[3], p.box[1] + p.box[3]) - Math.max(mine[1], p.box[1]));
       if ((ix * iy) / Math.min(mine[2] * mine[3], p.box[2] * p.box[3]) > 0.08) {
@@ -156,7 +161,7 @@ export async function run(argv) {
       }
     }
   }
-  if (!flags.under) placed.push({ what, panel: flags.panel, box: mine });
+  if (!flags.under) placed.push({ what, panel: flags.panel, box: mine, paint: isPaint });
 
   const out = await sharp(base, { raw: { width: W, height: H, channels: 4 } })
     .composite([{ input: pieceBuf, left, top }]).png().toBuffer();

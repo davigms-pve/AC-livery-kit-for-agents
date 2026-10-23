@@ -7,7 +7,7 @@ import { root } from '../lib/paths.mjs';
 
 export const help = `aclivery logo fetch <url> --name <name> [--yes]   download one logo into assets/logos/ (asks first)
 aclivery logo inspect <file>                        size, transparency, background, and quality warnings
-aclivery logo prep <in> --out <png> [--crop x,y,w,h] [--key-bg | --key-light] [--erase x,y,w,h] [--tint #RRGGBB] [--trim] [--size 2000]
+aclivery logo prep <in> --out <png> [--crop x,y,w,h] [--key-bg | --key-light] [--erase x,y,w,h] [--tint #RRGGBB] [--grey] [--flip] [--trim] [--size 2000]
     --key-bg  turn a near-uniform background (taken from the corners) transparent
     --crop    keep only part of the picture, as fractions x,y,w,h (for example 0,0,1,0.62 keeps the top 62%: the MONSTER and ENERGY rows of a lockup)
     --erase   clear a box (fractions x,y,w,h of the cropped picture) to remove stray bits, for example a piece of the next word left at an edge.
@@ -15,6 +15,8 @@ aclivery logo prep <in> --out <png> [--crop x,y,w,h] [--key-bg | --key-light] [-
     --key-light  make light neutral pixels (white, light grey) transparent: for logos with a baked-in checkerboard or a light backdrop that is not one flat colour.
               Coloured and dark parts stay; light edges become semi-transparent. Check the result on a dark background.
     --tint    recolour every opaque pixel, keeping the shape (for one-colour decals)
+    --grey    turn the colours to greys, keeping the shape and the light and dark (for tonal art; --tint is a flat colour instead)
+    --flip    mirror left to right (for the car's other side, when the art is not symmetric and a reference shows it mirrored)
     --trim    crop to the artwork    --size  longest side in px (SVG is rasterised at this size)
 Without --yes, fetch only prints what it would do and exits 2: confirm with the user, then re-run with --yes.
 Logos are third-party trademarks. They live in assets/ (gitignored) and are never committed.`;
@@ -29,7 +31,7 @@ const sniff = (b) =>
         : /^\s*(<\?xml|<svg)/i.test(b.subarray(0, 256).toString('utf8')) ? 'svg' : null;
 
 export async function run(argv) {
-  const { flags, positional } = parseArgs(argv, { bools: ['yes', 'key-bg', 'key-light', 'trim', 'json'] });
+  const { flags, positional } = parseArgs(argv, { bools: ['yes', 'key-bg', 'key-light', 'grey', 'flip', 'trim', 'json'] });
   const [sub, target] = positional;
   if (sub === 'fetch') return fetchLogo(target, flags);
   if (sub === 'inspect' && target) return inspect(target, flags);
@@ -160,6 +162,9 @@ async function prep(file, flags) {
       data[i + 3] = Math.min(data[i + 3], a);
     }
   }
+  if (flags.grey) {
+    for (let i = 0; i < data.length; i += 4) { const y = Math.round(0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2]); data[i] = data[i + 1] = data[i + 2] = y; }
+  }
   if (flags.tint) {
     const m = /^#?([0-9a-f]{6})$/i.exec(String(flags.tint));
     if (!m) throw new UsageError('--tint must be a hex colour like #111111');
@@ -167,6 +172,7 @@ async function prep(file, flags) {
     for (let i = 0; i < data.length; i += 4) { data[i] = r; data[i + 1] = g; data[i + 2] = b; }
   }
   let out = sharp(data, { raw: { width: w, height: h, channels: 4 } });
+  if (flags.flip) out = out.flop();
   if (flags.trim) out = sharp(await out.png().toBuffer()).trim({ background: { r: 0, g: 0, b: 0, alpha: 0 }, threshold: 1 });
   if (size && kind !== 'svg') out = out.resize({ width: size, height: size, fit: 'inside', withoutEnlargement: false });
   fs.mkdirSync(path.dirname(path.resolve(flags.out)), { recursive: true });

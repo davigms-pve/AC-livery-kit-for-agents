@@ -32,7 +32,8 @@ aclivery logo prep <in> --out assets/logos/prepped/monster.png --key-bg --tint "
 3. **Prepare for the car colour.** On a white car a white logo vanishes: recolour with `--tint`.
    `--key-bg` removes a flat background (white or any flat corner colour); `--trim` crops to the artwork.
 4. A multi-colour logo loses its colours with `--tint`. Use `--tint` only for one-colour decals; otherwise just
-   `--key-bg --trim`.
+   `--key-bg --trim`. `--grey` turns the colours to greys and keeps the light and dark (for quiet art); `--flip` mirrors a logo
+   left to right (when a reference shows it mirrored on the other side).
 5. Files live in `assets/logos/` (gitignored). Logos are trademarks of their owners: do not commit or share them.
 6. If `inspect` says the background is not flat, do not give up on the logo yet: run `logo prep ... --key-bg --trim` (flat background) or `--key-light --trim` (a baked-in checkerboard or a light backdrop that is not one colour),
    open the result on a dark background and look. A near-white background on a near-white body often needs no cutting at all. Place the logo if it looks

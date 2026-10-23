@@ -53,7 +53,7 @@ export const help = `aclivery apply <design.json> [--out dir] [--only role,...] 
 
 const LAYERS = ['tone', 'paint', 'logo', 'text'];
 const TOP = ['car', 'name', 'brief', 'colors', 'assets', 'textures', 'skin'];
-const ASSET = ['file', 'prep'], PREP = ['crop', 'erase', 'keyBg', 'keyLight', 'tint', 'trim', 'size'];
+const ASSET = ['file', 'prep'], PREP = ['crop', 'erase', 'keyBg', 'keyLight', 'tint', 'grey', 'flip', 'trim', 'size'];
 const TEXTURE = ['fill', 'base', 'size', 'elements'];
 const TEXT_OPTS = ['ink', 'font', 'bold', 'italic', 'spacing', 'outline'];
 const ELEMENT = ['panel', 'panels', 'pattern', 'density', 'seed', 'image', 'color', 'text', 'at', 'opacity', 'rotate', 'overlap', 'label', 'layer', 'covers', 'lines', ...TEXT_OPTS];
@@ -297,6 +297,8 @@ async function prepareAssets(design, dir) {
     if (a.prep.erase) args.push('--erase', a.prep.erase.join(','));
     if (a.prep.keyBg) args.push('--key-bg');
     if (a.prep.keyLight) args.push('--key-light');
+    if (a.prep.grey) args.push('--grey');
+    if (a.prep.flip) args.push('--flip');
     if (a.prep.tint) args.push('--tint', a.prep.tint);
     if (a.prep.trim) args.push('--trim');
     if (a.prep.size) args.push('--size', String(a.prep.size));

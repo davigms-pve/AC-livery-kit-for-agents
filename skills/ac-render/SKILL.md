@@ -32,7 +32,11 @@ by default (every view in one image); open it once, not six times. The path is p
 ```
 aclivery compare <car> --skin work --brief <slug>
 aclivery compare <car> --skin work --ref photo1.jpg,photo2.jpg --views right,front
+aclivery compare <car> --skin work --brief <slug> --each --out work/cmp        # one image per reference, in a folder
+aclivery compare <car> --skin work --ref photo1.jpg --views right --crop 0.1,0.3,0.4,0.4   # zoom on the door in both
 ```
+`--each` gives one pair per image (easier to read than a tall sheet). `--crop x,y,w,h` (fractions) cuts the same box out of the
+reference and our render and shows it larger, to read detail (a font, a claw's shape); use it with one pair.
 
 One image: each reference photo on the left, our render from the same view on the right. Look at it and name the
 differences (position, size, colour, missing parts); fix the biggest first. **Check the view for each reference:** a

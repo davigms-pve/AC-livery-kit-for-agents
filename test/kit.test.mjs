@@ -233,18 +233,31 @@ test('compare: rejects mismatched reference and view counts before doing any wor
   assert.match(r.stderr, /one view per reference/);
 });
 
-test('decal: refuses to cover art already placed unless --overlap, and a fresh canvas starts clean', async () => {
-  const home = tmp(); fakeCar(home, 'ov', { file: 'EXT_Main.dds', width: 400, height: 200 }, { a: { rect: [0, 0, 1, 1], textRotation: 0 } });
+test('decal: refuses to cover art on the same panel unless --overlap; paint is background; other panels are not compared; a fresh canvas starts clean', async () => {
+  const home = tmp(); fakeCar(home, 'ov', { file: 'EXT_Main.dds', width: 400, height: 200 }, { a: { rect: [0, 0, 1, 1], textRotation: 0 }, b: { rect: [0, 0, 1, 1], textRotation: 0 } });
   const out = path.join(home, 'o.png'), env = { ACLIVERY_HOME: home };
-  const one = (extra) => run(['decal', 'ov', '--panel', 'a', '--color', '#ff0000', '--out', out, '--at', '0.1,0.1,0.4,0.4', ...extra], env);
-  assert.equal(one(['--fill', '#ffffff']).status, 0);
-  const again = one(['--base', out]);
+  const red = path.join(home, 'red.png');
+  await sharp({ create: { width: 20, height: 20, channels: 3, background: '#ff0000' } }).png().toFile(red);
+  const AT = ['--at', '0.1,0.1,0.4,0.4'];
+  const art = (extra, panel = 'a') => run(['decal', 'ov', '--panel', panel, '--image', red, '--out', out, ...AT, ...extra], env);
+  const paint = (extra, panel = 'a') => run(['decal', 'ov', '--panel', panel, '--color', '#00ff00', '--out', out, ...AT, ...extra], env);
+  assert.equal(art(['--fill', '#ffffff']).status, 0);
+  const again = art(['--base', out]);
   assert.equal(again.status, 2);
   assert.match(again.stderr, /would cover/);
-  assert.equal(one(['--base', out, '--overlap']).status, 0);
-  const elsewhere = run(['decal', 'ov', '--panel', 'a', '--color', '#00ff00', '--base', out, '--out', out, '--at', '0.6,0.1,0.3,0.4'], env);
+  assert.equal(art(['--base', out, '--overlap']).status, 0);
+  const elsewhere = run(['decal', 'ov', '--panel', 'a', '--image', red, '--base', out, '--out', out, '--at', '0.6,0.1,0.3,0.4'], env);
   assert.equal(elsewhere.status, 0, elsewhere.stderr);
-  assert.equal(one(['--fill', '#ffffff']).status, 0); // new canvas: placements reset
+  assert.equal(art(['--fill', '#ffffff']).status, 0); // new canvas: placements reset
+  // art on another panel whose box overlaps is not compared (panel boxes can hold other islands)
+  assert.equal(art(['--base', out], 'b').status, 0);
+  // a colour is background: colour on colour, and art on a colour, are fine; a colour over art is still refused
+  assert.equal(paint(['--fill', '#ffffff']).status, 0);
+  assert.equal(paint(['--base', out]).status, 0);
+  assert.equal(art(['--base', out]).status, 0);
+  const over = paint(['--base', out]);
+  assert.equal(over.status, 2);
+  assert.match(over.stderr, /would cover "red\.png"/);
 });
 
 test('brief: references without an analysis ask for the analysis; subtle art cannot be dropped silently', async () => {
@@ -788,4 +801,45 @@ test('apply: only full builds count as rounds, and the brief remembers the outpu
   assert.match(run(['apply', file2, '--no-render', '--out', out3], env).stdout, /review, round 1:/);
   assert.match(run(['apply', file2, '--no-render', '--only', 'plates', '--out', out3], env).stdout, /not a round \(rounds done: 1\)/);
   assert.match(run(['apply', file2, '--no-render', '--out', out3], env).stdout, /review, round 2:/);
+});
+
+test('logo prep: --flip mirrors left to right and --grey keeps the light and dark as greys', async () => {
+  const dir = tmp(), src = path.join(dir, 'in.png'), out = path.join(dir, 'out.png');
+  const raw = Buffer.alloc(4 * 2 * 4, 255);   // 4x2: left half red, right half blue, opaque
+  for (let y = 0; y < 2; y++) for (let x = 0; x < 4; x++) { const o = (y * 4 + x) * 4; raw.set(x < 2 ? [255, 0, 0, 255] : [0, 0, 255, 255], o); }
+  await sharp(raw, { raw: { width: 4, height: 2, channels: 4 } }).png().toFile(src);
+  assert.equal(run(['logo', 'prep', src, '--out', out, '--flip']).status, 0);
+  let p = await px(out);
+  assert.deepEqual(p(0, 0), [0, 0, 255, 255]); assert.deepEqual(p(3, 0), [255, 0, 0, 255]);   // mirrored
+  assert.equal(run(['logo', 'prep', src, '--out', out, '--grey']).status, 0);
+  p = await px(out);
+  const [r, g, b, a] = p(0, 0), [r2, g2, b2] = p(3, 0);
+  assert.ok(r === g && g === b && a === 255, 'red turned grey, still opaque');
+  assert.ok(r2 === g2 && g2 === b2 && r2 < r, 'blue is a darker grey than red');
+});
+
+test('compare: --crop is checked, --each needs a folder, and the pair sheet zooms the same box on both sides', async () => {
+  const { parseCrop, pairSheet } = await import('../src/commands/compare.mjs');
+  assert.deepEqual(parseCrop('0.1,0.2,0.5,0.5'), [0.1, 0.2, 0.5, 0.5]);
+  for (const bad of ['1,2,3', '0.8,0,0.5,0.5', '0,0,0,1', 'a,b,c,d']) assert.throws(() => parseCrop(bad), /--crop must be x,y,w,h/);
+  // left half of both pictures is red, right half is blue: a crop of the right half must show only blue on both sides
+  const half = async (w, h) => {
+    const raw = Buffer.alloc(w * h * 3);
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) raw.set(x < w / 2 ? [255, 0, 0] : [0, 0, 255], (y * w + x) * 3);
+    return sharp(raw, { raw: { width: w, height: h, channels: 3 } }).png().toBuffer();
+  };
+  const rows = [{ ref: await half(200, 100), ours: await half(400, 200), view: 'right', name: 'a.jpg' }];
+  const dir = tmp(), f = path.join(dir, 's.png');
+  fs.writeFileSync(f, await pairSheet(rows, [0.5, 0, 0.5, 1]));
+  const p = await px(f);
+  assert.deepEqual(p(450, 300).slice(0, 3), [0, 0, 255]);    // reference cell, centre: blue only
+  assert.deepEqual(p(1400, 300).slice(0, 3), [0, 0, 255]);   // our cell, centre: blue only
+  const uncropped = path.join(dir, 'u.png'); fs.writeFileSync(uncropped, await pairSheet(rows));
+  const q = await px(uncropped);
+  assert.deepEqual(q(100, 300).slice(0, 3), [255, 0, 0]);    // without a crop the left half is there
+  // argument errors come before anything is rendered
+  const ref = path.join(dir, 'r.png'); fs.writeFileSync(ref, rows[0].ref);
+  const base = ['compare', 'nocar', '--skin', dir, '--ref', ref, '--views', 'right'];
+  assert.match(run([...base, '--crop', '2,0,1,1']).stderr, /--crop must be x,y,w,h/);
+  assert.match(run([...base, '--each', '--out', 'x.png']).stderr, /--each writes one image per reference into a folder/);
 });
