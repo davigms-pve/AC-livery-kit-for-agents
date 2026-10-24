@@ -13,7 +13,9 @@ export const help = `aclivery export <workDir> --car <id> --name <SkinFolderName
     <workDir>/ui_skin.json, preview.jpg, ext_config.ini ...   copied as they are
   Output: <out>/<Name>/ (the skin folder) and <out>/<Name>.zip laid out as content/cars/<car>/skins/<Name>/ for
   Content Manager (drag the zip onto it). DXT1 by default; list textures that need transparency in --alpha (DXT5).
-  Every DDS produced is validated; the export fails if one is broken.`;
+  Every DDS produced is validated; the export fails if one is broken.
+  Prefer: aclivery apply <design.json> --export. It does this AND writes ui_skin.json (the name and number in the car list) and a
+  preview.jpg. This low-level command only packages what is in <workDir>; it warns when those two are missing.`;
 
 export async function run(argv) {
   const { flags, positional } = parseArgs(argv, { bools: ['no-zip'] });
@@ -40,6 +42,8 @@ export async function run(argv) {
       console.log(`encoded ${f} -> ${target} (${info.width}x${info.height}, ${alpha.has(name.toLowerCase()) ? 'DXT5' : 'DXT1'})`);
     } else if (/^\.png$/i.test(ext) && !['preview', 'livery'].includes(name.toLowerCase())) {
       console.log(`skipped ${f}: not a texture this car uses (known: ${[...known.values()].slice(0, 4).join(', ')} ...)`);
+    } else if (/.placements.json$|^.aclivery-work$/i.test(f)) {
+      continue;   // the kit's own bookkeeping, never part of a skin
     } else if (fs.statSync(src).isFile()) {
       fs.copyFileSync(src, path.join(skinDir, f));
     }
@@ -53,6 +57,9 @@ export async function run(argv) {
     if (level === 'error') failed = true;
   }
   if (failed) { console.log('export failed: fix the errors above'); return 1; }
+  for (const [f, what] of [['ui_skin.json', 'the skin shows no name or number in the car list'], ['preview.jpg', 'the skin shows a blank tile in the car list']]) {
+    if (!fs.existsSync(path.join(skinDir, f))) console.log(`warning: no ${f} in ${work}: ${what}. aclivery apply <design.json> --export writes both.`);
+  }
   console.log(`skin folder: ${skinDir}`);
   if (!flags['no-zip']) {
     const zipPath = path.join(outRoot, `${flags.name}.zip`);

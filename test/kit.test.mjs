@@ -922,3 +922,58 @@ test('photos: every photo gets a numbered sheet and is added to the brief once; 
   const onSide = { textures: { ext_main: { elements: [{ panel: 'sidep', text: 'THIELE', covers: 'driver name', at: [0, 0, 1, 1] }] } } };
   assert.equal(coverage(onSide, brief, regions).length, 0);
 });
+
+test('coverage: a fetch layer with its file is answered only by elements using that file; typed brand text is warned about', async () => {
+  const { coverage, brandTextWarnings } = await import('../src/commands/apply.mjs');
+  const regions = { regions: [{ name: 'left_side', panels: [{ name: 'sidep' }] }, { name: 'wing', panels: [{ name: 'wingp' }] }] };
+  const layer = (o) => ({ kind: 'logo', confidence: 'high', evidence: 'x', source: 'fetch', brand: 'Monster Energy', where: 'doors', ...o });
+  const brief = { slug: 's', analysis: { layers: [
+    layer({ what: 'Monster claw', part: 'symbol', asset: 'assets/logos/prepped/monster_claw.png' }),
+    layer({ what: 'MONSTER ENERGY wordmark', part: 'wordmark', asset: 'assets/logos/prepped/monster_wordmark.png' }) ] }, decisions: [] };
+  const design = (els) => ({ assets: { claw: { file: 'assets/logos/prepped/monster_claw.png' }, wordmark: 'assets/logos/prepped/monster_wordmark.png' }, textures: { ext_main: { elements: els } } });
+  // only the claw is on the door: the wordmark layer is NOT answered by an element whose name has the word "monster"
+  const onlyClaw = coverage(design([{ panel: 'sidep', image: 'claw', at: [0, 0, 1, 1] }]), brief, regions);
+  assert.equal(onlyClaw.length, 1);
+  assert.match(onlyClaw[0], /layer 1 "MONSTER ENERGY wordmark".*brand mark to fetch \(monster_wordmark\.png\) but no element of the design uses that file/);
+  assert.match(onlyClaw[0], /decisions '\{"layer":1,/);
+  // both used: nothing missing; a mark used only on the wing does not answer "doors"
+  const both = design([{ panel: 'sidep', image: 'claw', at: [0, 0, 1, 1] }, { panel: 'sidep', image: 'wordmark', at: [0, 0, 1, 1] }]);
+  assert.equal(coverage(both, brief, regions).length, 0);
+  const wrongPlace = design([{ panel: 'sidep', image: 'claw', at: [0, 0, 1, 1] }, { panel: 'wingp', image: 'wordmark', at: [0, 0, 1, 1] }]);
+  assert.match(coverage(wrongPlace, brief, regions).join('\n'), /layer 1 .*says "doors" but no matching element sits there/);
+  // typed brand text
+  const typed = design([{ panel: 'wingp', text: 'MONSTER', at: [0, 0, 1, 1] }, { panel: 'sidep', text: 'T. THIELE', at: [0, 0, 1, 1] }]);
+  const w = brandTextWarnings(typed, brief);
+  assert.equal(w.length, 1);
+  assert.match(w[0], /ext_main\.elements\[0\] types "MONSTER", which is the brand Monster Energy \(layer 0\) and has a logo file \(monster_claw\.png\): use the file/);
+  brief.decisions = [{ layer: 0, q: 'typed brand text', a: 'a tagline next to the logo', by: 'default' }];
+  assert.equal(brandTextWarnings(typed, brief).length, 1);                  // layer 1 (the wordmark) is still undecided
+  brief.decisions.push({ layer: 1, q: 'typed brand text', a: 'a tagline next to the logo', by: 'default' });
+  assert.equal(brandTextWarnings(typed, brief).length, 0);
+  assert.equal(brandTextWarnings(typed, { analysis: { layers: [layer({ what: 'claw', asset: '' })] } }).length, 0);   // no logo file yet: nothing to use instead
+});
+
+test('apply names the ship step once three full builds are clean; export leaves out bookkeeping files and warns about a missing name and picture', async () => {
+  const home = tmp(); applyCar(home, 'sh');
+  const dir = tmp(), env = { ACLIVERY_HOME: home }, out = path.join(dir, 'o'), file = path.join(dir, 'd.json');
+  fs.writeFileSync(file, JSON.stringify({ car: 'sh', brief: 'sh', textures: { ext_main: { elements: [{ panel: 'a', color: '#ff0000', at: [0, 0, 0.2, 0.2] }] } } }));
+  fs.mkdirSync(path.join(home, 'projects', 'sh'), { recursive: true });
+  fs.writeFileSync(path.join(home, 'projects', 'sh', 'brief.json'), JSON.stringify({ slug: 'sh' }));
+  const build = () => run(['apply', file, '--no-render', '--out', out], env).stdout;
+  assert.doesNotMatch(build(), /ready to ship/);
+  assert.doesNotMatch(build(), /ready to ship/);
+  const third = build();
+  assert.match(third, /ready to ship \(round 3, nothing missing\): apply .*d\.json --export builds the installable zip WITH ui_skin\.json and a preview picture/);
+  assert.match(third, /aclivery brief set sh report/);
+  assert.doesNotMatch(run(['apply', file, '--no-render', '--only', 'ext_main', '--out', out], env).stdout, /ready to ship/);   // a part build is not a round
+  // the low-level export: no junk files, and a warning when the name and the picture are missing
+  const work = path.join(dir, 'w'); fs.mkdirSync(work);
+  await sharp({ create: { width: 64, height: 32, channels: 3, background: '#ff0000' } }).png().toFile(path.join(work, 'EXT_Main.png'));
+  fs.writeFileSync(path.join(work, 'EXT_Main.png.placements.json'), '[]'); fs.writeFileSync(path.join(work, '.aclivery-work'), 'x');
+  const ex = run(['export', work, '--car', 'sh', '--name', 'Test', '--out', path.join(dir, 'dist'), '--no-zip'], env);
+  assert.equal(ex.status, 0, ex.stderr);
+  assert.deepEqual(fs.readdirSync(path.join(dir, 'dist', 'Test')), ['EXT_Main.dds']);
+  assert.match(ex.stdout, /warning: no ui_skin\.json .*the skin shows no name or number in the car list/);
+  assert.match(ex.stdout, /warning: no preview\.jpg .*blank tile/);
+  assert.match(run(['export', '--help']).stdout, /Prefer: aclivery apply <design\.json> --export/);
+});

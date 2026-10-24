@@ -13,7 +13,7 @@ import { run as render } from './render.mjs';
 import { run as compare } from './compare.mjs';
 import { run as exportSkin } from './export.mjs';
 import { decodeTexture } from '../engine.mjs';
-import { decidedLayer } from './brief.mjs';
+import { decidedLayer, ROUNDS } from './brief.mjs';
 import { PATTERNS, TONAL, DEFAULTS, DEFAULT_DENSITY, DISCREET, makePattern, renderPattern, luma } from '../lib/patterns.mjs';
 
 export const help = `aclivery apply <design.json> [--out dir] [--only role,...] [--check] [--no-render] [--export]
@@ -352,17 +352,22 @@ export function coverage(design, brief, regions) {
   for (const { l, i } of layers) {
     const before = out.length;
     const ok = KIND_OK[l.kind] ?? (() => true);
-    const keys = new Set([...words(l.what), ...words(l.brand)]);
-    const explicit = items.filter((it) => it.e.covers && (String(it.e.covers) === String(i) || [...words(it.e.covers)].some((w) => keys.has(w))));
-    const named = items.filter((it) => ok(it.e) && [...keys].some((k) => it.hay.includes(k)));
-    const mine = explicit.length ? explicit : named.length ? named : items.filter((it) => ok(it.e));
     const label = `layer ${i} "${String(l.what ?? l.kind).slice(0, 60)}" (${l.kind})`;
-    if (!explicit.length && !named.length && !['tonal-art', 'accent', 'plate', 'marking'].includes(l.kind)) { out.push(`${label}: no element answers it (no text, image name or "covers" matches). Add one, or ${leave(i)}`); continue; }
-    if (!mine.length) { out.push(`${label}: the design has no element of this kind. Add one, or ${leave(i)}`); continue; }
-    if (l.source === 'fetch' && l.asset) {
-      const want = path.basename(String(l.asset)).toLowerCase(), used = Object.values(design.assets ?? {}).map((a) => path.basename(String(typeof a === 'string' ? a : a?.file ?? '')).toLowerCase());
-      if (!used.includes(want)) { out.push(`${label} is a brand mark to fetch (${path.basename(String(l.asset))}) but no asset of the design uses that file. Use it (cut with prep), or change the layer's source and say why.`); continue; }
+    // A brand mark with its file set is answered by the elements that use THAT file, not by words: two marks of one brand (the claw and the
+    // wordmark) must not vouch for each other.
+    let byAsset = null;
+    if (l.source === 'fetch' && String(l.asset ?? '').trim()) {
+      const want = path.basename(String(l.asset)).toLowerCase();
+      const fileOf = (name) => { const a = design.assets?.[name]; return path.basename(String(typeof a === 'string' ? a : a?.file ?? '')).toLowerCase(); };
+      byAsset = items.filter((it) => typeof it.e.image === 'string' && fileOf(it.e.image) === want);
+      if (!byAsset.length) { out.push(`${label} is a brand mark to fetch (${path.basename(String(l.asset))}) but no element of the design uses that file. Place it where the references show it (cut with prep if needed), set this layer's asset to the file you do use, or ${leave(i)}`); continue; }
     }
+    const keys = new Set([...words(l.what), ...words(l.brand)]);
+    const explicit = byAsset ? [] : items.filter((it) => it.e.covers && (String(it.e.covers) === String(i) || [...words(it.e.covers)].some((w) => keys.has(w))));
+    const named = byAsset ? [] : items.filter((it) => ok(it.e) && [...keys].some((k) => it.hay.includes(k)));
+    const mine = byAsset ?? (explicit.length ? explicit : named.length ? named : items.filter((it) => ok(it.e)));
+    if (!byAsset && !explicit.length && !named.length && !['tonal-art', 'accent', 'plate', 'marking'].includes(l.kind)) { out.push(`${label}: no element answers it (no text, image name or "covers" matches). Add one, or ${leave(i)}`); continue; }
+    if (!mine.length) { out.push(`${label}: the design has no element of this kind. Add one, or ${leave(i)}`); continue; }
     if (l.kind === 'plate') { answered.push(i); continue; }
     for (const p of places(l.where)) {
       const here = mine.some((it) => it.panels.includes('*') || it.panels.some((pn) => regionOf(pn).some((r) => p.inRegion.test(r))) || it.role !== 'ext_main');
@@ -372,6 +377,23 @@ export function coverage(design, brief, regions) {
     if (out.length === before) answered.push(i);
   }
   out.answered = answered;
+  return out;
+}
+
+/**
+ * A text element that spells the brand of a fetch layer that has its logo file is a redrawn brand mark (a run typed MONSTER on the wing instead of using the logo).
+ * A warning, not an error; a decision tagged with the layer silences it.
+ */
+export function brandTextWarnings(design, brief) {
+  const decided = new Set((brief?.decisions ?? []).map(decidedLayer).filter((n) => n !== null));
+  const brands = (brief?.analysis?.layers ?? []).map((l, i) => ({ l, i })).filter(({ l, i }) => l.source === 'fetch' && String(l.asset ?? '').trim() && String(l.brand ?? '').trim() && !decided.has(i))
+    .map(({ l, i }) => ({ i, brand: String(l.brand), word: words(l.brand)[0], asset: path.basename(String(l.asset)) })).filter((b) => b.word);
+  const out = [];
+  for (const [role, t] of Object.entries(design.textures ?? {})) for (const [i, e] of (t.elements ?? []).entries()) {
+    if (typeof e.text !== 'string') continue;
+    const b = brands.find((x) => new RegExp(`\\b${x.word}\\b`, 'i').test(e.text));   // one warning per text, for the first brand it spells
+    if (b) out.push(`${role}.elements[${i}] types "${e.text}", which is the brand ${b.brand} (layer ${b.i}) and has a logo file (${b.asset}): use the file, never redraw a brand mark. If typing it is right (a tagline next to the logo), say so: aclivery brief add ${brief?.slug ?? '<slug>'} decisions '{"layer":${b.i},"q":"typed brand text","a":"why","by":"user or default"}'`);
+  }
   return out;
 }
 
@@ -400,6 +422,7 @@ export async function run(argv) {
   const warnings = designWarnings(design, pack.profile);
   let brief = null;
   if (design.brief) { try { brief = JSON.parse(fs.readFileSync(path.join(home(), 'projects', String(design.brief), 'brief.json'), 'utf8')); } catch { /* no such brief: coverage is skipped */ } }
+  warnings.push(...brandTextWarnings(design, brief));
   const missing = coverage(design, brief, pack.regions);
   const answered = missing.answered ?? [];
   const count = Object.values(design.textures).reduce((n, t) => n + t.elements.length, 0);
@@ -545,6 +568,7 @@ export async function run(argv) {
       } catch { /* the brief is optional */ }
     }
     if (only) console.log(`  next: a part build is not a round. Build the other textures the same way, then run apply without --only: that full build is round ${round + 1}.`);
+    else if (round >= ROUNDS && !missing.length && !flags.export) console.log(`  ready to ship (round ${round}, nothing missing): apply ${path.relative(process.cwd(), path.resolve(file)).replace(/\\/g, '/')} --export builds the installable zip WITH ui_skin.json and a preview picture (do not use the low-level "export" command for this), then aclivery validate skin <the skin folder it prints>, then aclivery brief set ${design.brief ?? '<slug>'} report "<what is built, placeholders, what is left out and why, what is not verified in the game>". If the differences from the references are still big, do another round first.`);
     else if (!flags['no-render']) console.log('  next: open ' + (design.brief ? 'compare.png' : 'sheet.png') + ', first fix every "missing" line (add the element, or leave it out with a decision that names the layer: aclivery brief add <slug> decisions {"layer":N,"a":"why"}), then name the 3 to 5 biggest differences from the references (the wrong size, the wrong place, too faint), change those in the design file, run apply again. Do at least 3 rounds; more are fine while the differences are big, stop when they are small. Skills: ac-render (reading compare.png), ac-verify (one element against a reference crop).');
   }
 
@@ -559,7 +583,9 @@ export async function run(argv) {
     fs.writeFileSync(path.join(pkg, 'ui_skin.json'), JSON.stringify(design.skin ?? { skinname: name }, null, 1));
     const args = [pkg, '--car', design.car, '--name', name, '--out', path.join(out, 'dist')];
     if (transparent.length) args.push('--alpha', transparent.join(','));
-    return exportSkin(args);
+    const code = await exportSkin(args);
+    if (code === 0) console.log(`next: aclivery validate skin "${path.join(out, 'dist', name)}" --car ${design.car}, then aclivery brief set ${design.brief ?? '<slug>'} report "<text>" (what is built, placeholders, what is left out and why, what is not verified in the game), then tell the user which zip to drag onto Content Manager.`);
+    return code;
   }
   return 0;
 }
