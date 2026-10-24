@@ -24,7 +24,9 @@ aclivery car notes <car>                          what is already known about th
 
 ## How to run it
 
-1. `aclivery status`, then `brief init` (a short slug) once you know the goal in a sentence. Say it back to the user.
+1. `aclivery status`, then `brief init` (a short slug) once you know the goal in a sentence. Say it back to the user. `brief show` then asks how involved
+   they want to be: **normal** (you check in a few times: the questions below, a plan before you build, a first draft to look at) or **batch** (you do
+   everything and ask at the end). Record it: `aclivery brief set <slug> mode normal|batch`. If they do not mind, use normal.
 2. **Look at every photo.** Run `aclivery photos <the photo folder> --brief <slug>` and open every sheet it makes. Do not pick a few
    and skip the rest: one photo (often a view from above or a close-up) can be the only one that shows a part of the livery. For each
    number decide the view and write a one-line note of what it shows. Then tell the user in a few lines what you found
@@ -40,15 +42,21 @@ aclivery car notes <car>                          what is already known about th
    crest; shall I use that?"), and make "I don't know, skip it" a fine answer. Point at the photo ("photo 3, near the top") or show a
    crop instead of describing it. If they cannot picture where something goes, show `render --regions` and let them pick by colour.
    Never ask them to run commands or choose technical settings.
-6. Record every answer with the `set` or `add` line `brief show` prints, and every real decision with `brief add ... decisions`.
+6. **Two check-ins in normal mode, both asked by `brief show`.** The **plan**, before you build: say in a few plain sentences what you found, which
+   marks you have files for, what you will draw yourself, what you can only make a rough likeness of (the kit draws line patterns, it cannot copy
+   hand-drawn soft art), what you will leave out or stand in for. Wait for their answer, then `brief set <slug> planApproved "<their words>"`.
+   The **first draft**, after the first full build: show them the images (`compare.png`, `sheet.png`), not just the paths, ask what looks wrong or
+   missing in their words, then `brief set <slug> draftReviewed "<their words>"` and turn each point into a change. After that, build and check on
+   your own; interrupt only for what you cannot resolve (a taste call, missing information, a trade-off that is theirs).
+7. Record every answer with the `set` or `add` line `brief show` prints, and every real decision with `brief add ... decisions`.
    The brief is your memory; you can lose your context and `brief show` restores it.
-7. **If you truly cannot ask** (an automatic run with nobody to answer): take the default, add it to `decisions`, mark the layer
-   `"assumed": "default: user not asked, <why>"` (see `ac-analyze`), and tell the user at the end what you assumed. If a view
+8. **Batch, or if you truly cannot ask** (an automatic run with nobody to answer): `aclivery brief set <slug> mode batch`, take the default, add it to `decisions`, mark the layer
+   `"assumed": "default: user not asked, <why>"` (see `ac-analyze`), and tell the user at the end what you assumed, and put the questions you would have asked, each with its default, in the report. If a view
    is missing and nobody can say, record it: `aclivery brief set <slug> viewsWaived '["top"]'`.
-8. If something is missing on the machine (no car model file, for example), offer the fallback from `docs/user-journey.md`
+9. If something is missing on the machine (no car model file, for example), offer the fallback from `docs/user-journey.md`
    ("when something is missing") and say plainly what degrades.
-9. Ask before any download or anything that leaves the machine (`ac-logos` has the rule).
-10. **When you finish, tell the user in plain words**: what you built, what is a guess or a placeholder, what you left out and why,
+10. Ask before any download or anything that leaves the machine (`ac-logos` has the rule).
+11. **When you finish, tell the user in plain words**: what you built, what is a guess or a placeholder, what you left out and why,
     which images to open, and that nothing was tried in the game yet.
 
 Do not keep a list of elements in the brief: the analysis layers (with their `source`) are the plan and `design.json` is the work (see `docs/agent-flow.md`).

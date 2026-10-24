@@ -3,7 +3,7 @@ import path from 'node:path';
 import { parseArgs, UsageError } from '../lib/args.mjs';
 import { home, packDir } from '../lib/paths.mjs';
 
-export const help = `aclivery brief init <slug> [--title "..."] [--car <id>]   start a project (the livery you are making)
+export const help = `aclivery brief init <slug> [--title "..."] [--car <id>] [--mode normal|batch]   start a project (the livery you are making)
 aclivery brief show <slug>                              what is decided, what is missing, and THE next step
 aclivery brief set <slug> <path> <value>                e.g. driver.name "T. Thiele"   car.id rss_gtm_protech_p92_f6
 aclivery brief add <slug> <list> '<json>'               lists: elements, references, decisions, openQuestions
@@ -19,6 +19,8 @@ aclivery brief list                                     all projects
   Every layer needs confidence and evidence; low confidence (or a brand read by shape only) becomes a question for the user.
   Photos: aclivery photos <folder> --brief <slug> adds every photo; give each a view. If the user has no photo of a basic view (side, front, rear, top):
   aclivery brief set <slug> viewsWaived '["top"]'.
+  How involved the user wants to be: "mode": "normal" (check in a few times: ask early, show a plan, show a first draft) or "batch" (do everything, ask at the end).
+  aclivery brief set <slug> mode normal|batch. In normal mode brief show asks for planApproved (after the plan) and draftReviewed (after the first draft).
   When the user cannot be asked (a batch run), take the default and write it down: layer "assumed": "default: user not asked, <why>"
   (stops the question, shows in the report and in DONE); an open question stored as {"q":"...","default":"...","by":"..."} does the same.
   Then every layer needs a "source": fetch (a brand mark that exists as a file; set "asset" to the prepared file), generate (livery art with no file: a pattern),
@@ -37,7 +39,7 @@ const save = (slug, b) => { fs.mkdirSync(path.dirname(file(slug)), { recursive: 
 const blank = (slug, title, car) => ({
   slug, title: title ?? slug, createdAt: new Date().toISOString(),
   car: { id: car ?? null }, driver: { name: null, number: null, country: null, team: null },
-  baseColour: null, references: [], analysis: null, elements: [], decisions: [], openQuestions: [],
+  baseColour: null, references: [], analysis: null, elements: [], decisions: [], openQuestions: [], mode: null,
 });
 
 function setPath(obj, dotted, value) {
@@ -78,6 +80,19 @@ const answeredByDefault = (q) => !!q && typeof q === 'object' && !!text(q.defaul
 /** A decision about a layer that closes its "missing" line: {"layer": 11, "q": "...", "a": "...", "by": "..."}. Returns the layer number, or null. */
 export const decidedLayer = (d) => (d && typeof d === 'object' && d.layer !== undefined && /^\d+$/.test(String(d.layer)) && text(d.a ?? d.answer ?? d.why) ? Number(d.layer) : null);
 const questionText = (q) => (q && typeof q === 'object' ? text(q.q) || JSON.stringify(q) : String(q));
+const short = (s, n = 40) => { const t = text(s); return t.length > n ? t.slice(0, n - 1) + '...' : t; };
+const listOf = (items, max = 8) => (items.length ? items.slice(0, max).join('; ') + (items.length > max ? `; and ${items.length - max} more` : '') : 'none');
+/** The plan, in plain words, for the check-in before building: what has a file, what is drawn by the kit, what is only a rough likeness, what is left out. */
+export function planAsk(b) {
+  const live = (b.analysis?.layers ?? []).filter((l) => l.kind !== 'base');
+  const has = (l) => l.source === 'fetch' && text(l.asset) && !/placeholder/i.test(String(l.asset));
+  const made = live.filter((l) => ['construct', 'stock'].includes(l.source)).map((l) => short(l.what));
+  const rough = live.filter((l) => l.source === 'generate').map((l) => short(l.what));
+  const stand = live.filter((l) => l.source === 'fetch' && !has(l)).map((l) => short(l.what));
+  const left = live.filter((l) => l.source === 'skip').map((l) => `${short(l.what, 32)} (${short(l.why, 40)})`);
+  return `Before I start building, here is my plan, for you to check in your own words. Marks and logos I have files for: ${listOf(live.filter(has).map((l) => short(l.what)))}. Text, numbers, plates and colours I will draw myself: ${listOf(made)}. Art I can only make a rough likeness of (the kit draws line patterns, not hand-drawn soft art): ${listOf(rough)}. Stand-ins or missing files: ${listOf(stand)}. Left out: ${listOf(left)}. Is that OK, or do you want to change something? Tell the user this in a few plain sentences, not as a list of layer numbers.`;
+}
+
 const hasReport = (b) => typeof b.report === 'string' ? b.report.trim() !== '' : !!b.report && Object.keys(b.report).length > 0;
 
 /** What the final report must name: layers drawn from placeholder art, and layers left out (with the reason given). */
@@ -98,6 +113,7 @@ export function gaps(b, { packExists = false, fileExists = (p) => fs.existsSync(
   const todo = [];
   if (!b.car?.id) todo.push({ ask: 'Which car is this for? (the car folder name, e.g. rss_gtm_protech_p92_f6)', set: `car.id` });
   else if (!packExists) todo.push({ ask: `No car pack for ${b.car.id}. Do you have the car's .kn5 file?`, do: `aclivery car prep <path to ${b.car.id}.kn5> --skins <its skins folder>`, blocked: 'everything about panels and renders' });
+  if (!['normal', 'batch'].includes(b.mode)) todo.push({ ask: 'How involved do you want to be? I can check in with you a few times (a plan before I build, a first draft to look at), or do everything and ask you at the end. Which do you prefer? (If you do not mind, I will check in.)', set: 'mode', then: `answer normal or batch. If nobody can be asked (an automatic run): aclivery brief set ${b.slug ?? '<slug>'} mode batch` });
   if (!b.references?.length && !b.elements?.length) todo.push({ ask: 'What should it look like? Share reference images, or describe the design in a sentence.', add: 'references' });
   // Every photo the user gave gets looked at and given a view; then the basic views are checked, and a missing one is a question for the user
   // (a photo of the roof is often the only place a big graphic shows), not something to skip quietly.
@@ -172,15 +188,17 @@ export function gaps(b, { packExists = false, fileExists = (p) => fs.existsSync(
         }
       }
       const pending = todo.some((t) => /to FETCH|marked skip/.test(t.do ?? ''));
-      if (!pending && !b.build) todo.push({ ask: null, do: `build in parts: write the design file (one element per layer; set "brief": "${b.slug ?? '<slug>'}"; give each element "covers": "<layer word>"), then aclivery apply <design.json> --check, then apply. Part 1: the body texture (aclivery apply ... --only ext_main), then the other textures (plates, banner, glass, grille).` });
+      if (!pending && !b.build && b.mode !== 'batch' && !text(b.planApproved)) todo.push({ ask: planAsk(b), set: 'planApproved', then: 'record what the user said (their words). If they want something changed, change the layers or sources first' });
+      else if (!pending && !b.build) todo.push({ ask: null, do: `build in parts: write the design file (one element per layer; set "brief": "${b.slug ?? '<slug>'}"; give each element "covers": "<layer word>"), then aclivery apply <design.json> --check, then apply. Part 1: the body texture (aclivery apply ... --only ext_main), then the other textures (plates, banner, glass, grille).` });
       else if (!pending && b.build) {
         if (b.build.part) todo.push({ ask: null, do: `the last build was a part (--only ${b.build.part}), which is not a round (rounds done: ${b.build.round ?? 0}). Build the other textures the same way, then run aclivery apply <design> without --only: that full build is round ${(b.build.round ?? 0) + 1}` });
         else if (b.build.missing > 0) todo.push({ ask: null, do: `the last build left ${b.build.missing} layer(s) missing: run aclivery apply <design> --check, fix every "missing:" line (add the element, or record a decision), then build again` });
+        else if (b.mode !== 'batch' && (b.build.round ?? 0) >= 1 && !text(b.draftReviewed)) todo.push({ ask: `Here is a first draft. Please open ${b.build.out ? path.join(b.build.out, 'compare.png') : 'compare.png'} (the photo on the left, ours on the right) and ${b.build.out ? path.join(b.build.out, 'sheet.png') : 'sheet.png'}, and tell me what looks wrong or missing, in your own words. I will fix what you point at before I polish it. (Show the user the images, do not just give a path.)`, set: 'draftReviewed', then: 'record what the user said, then turn each point into a change in the design file' });
         else if ((b.build.round ?? 0) < ROUNDS) todo.push({ ask: null, do: `rounds done: ${b.build.round} of at least ${ROUNDS} (more are fine while the differences are big). Skills: ac-render and ac-verify. Look at compare.png, name the 3 to 5 biggest differences from the references, fix those in the design, apply again` });
         else if (!b.build.exported) todo.push({ ask: null, do: 'export: aclivery apply <design> --export, then aclivery validate skin <dist folder>/<Name>' });
         else if (!hasReport(b)) {
           const { placeholders, skipped, assumed, decided, waived } = openNotes(b);
-          todo.push({ ask: null, do: `write the report (what is built; placeholders: ${placeholders.join('; ') || 'none'}; skipped: ${skipped.join('; ') || 'none'}; left out by a decision: ${decided.join('; ') || 'none'}; views the user had no photo of: ${waived.join(', ') || 'none'}; assumed, not confirmed by the user: ${assumed.join('; ') || 'none'}; and that none of it was verified in the game until the user loads it in Content Manager and says so)`, set: 'report' });
+          todo.push({ ask: null, do: `write the report (what is built; placeholders: ${placeholders.join('; ') || 'none'}; skipped: ${skipped.join('; ') || 'none'}; left out by a decision: ${decided.join('; ') || 'none'}; views the user had no photo of: ${waived.join(', ') || 'none'}; assumed, not confirmed by the user: ${assumed.join('; ') || 'none'};${b.mode === 'batch' ? ' the short list of questions you would have asked the user, each with the default you took;' : ''} and that none of it was verified in the game until the user loads it in Content Manager and says so)`, set: 'report' });
         }
       }
     }
@@ -203,7 +221,7 @@ export async function run(argv) {
   if (sub === 'init') {
     if (!/^[\w-]+$/.test(slug)) throw new UsageError('slug: letters, digits, - or _');
     if (fs.existsSync(file(slug))) throw new UsageError(`project "${slug}" already exists: aclivery brief show ${slug}`);
-    save(slug, blank(slug, flags.title, flags.car));
+    { const nb = blank(slug, flags.title, flags.car); if (['normal', 'batch'].includes(flags.mode)) nb.mode = flags.mode; save(slug, nb); }
     console.log(`started ${slug}. Next: aclivery brief show ${slug}`);
     return 0;
   }
@@ -244,6 +262,7 @@ export async function run(argv) {
       console.log(`  left out by a decision: ${decided.join('; ') || 'none'}`);
       console.log(`  views the user had no photo of: ${waived.join(', ') || 'none'}`);
       console.log(`  assumed, not confirmed by the user: ${assumed.join('; ') || 'none'}`);
+      console.log(`  mode: ${b.mode ?? 'normal'}${b.mode === 'batch' ? ' (no check-ins: the questions are in the report)' : ''}`);
       console.log(`  report: ${typeof b.report === 'string' ? b.report : JSON.stringify(b.report)}`);
       console.log('  Not verified in the game until the user loads the zip in Content Manager and says so.');
       return 0;
