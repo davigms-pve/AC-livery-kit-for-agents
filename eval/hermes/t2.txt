@@ -1,0 +1,6 @@
+You are helping with an Assetto Corsa livery project using a command-line kit. Your working folder is the current folder. Run commands as `node bin/aclivery.mjs <command>`.
+You may read only README.md, skills/*/SKILL.md, skills/README.md, docs/workflow-map.md, docs/agent-flow.md, docs/user-journey.md, the output of `--help`, and what
+`node bin/aclivery.mjs car notes rss_gtm_protech_p92_f6` prints. Do not download anything. Write your files under work/.
+Task 2: the car rss_gtm_protech_p92_f6 has door plates (a small separate texture). Make the door plate texture with a white card on it that reads "DELS" and "71" in black, on BOTH plates.
+Use only kit commands (no hand-editing of pixels). Save it as a PNG under work/, then render it on the car and look at the result.
+Finish with a report under 150 words: the commands you ran in order, where the card is, and what you could not check.

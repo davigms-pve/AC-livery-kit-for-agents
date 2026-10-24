@@ -1,0 +1,6 @@
+You are helping with an Assetto Corsa livery project using a command-line kit. Your working folder is the current folder. Run commands as `node bin/aclivery.mjs <command>`.
+You may read only README.md, skills/*/SKILL.md, skills/README.md, docs/workflow-map.md, docs/agent-flow.md, docs/user-journey.md, the output of `--help`, and what
+`node bin/aclivery.mjs car notes rss_gtm_protech_p92_f6` prints. Do not download anything. Write your files under work/.
+Task 3: on the car rss_gtm_protech_p92_f6, put the Monster Energy wordmark (assets/logos/prepped/monster_wordmark.png) on the car's RIGHT door, upright and readable, roughly where the
+reference photo refs/855000982_1094238246560196_2757428163464498714_n.jpg shows it (a white body). Use only kit commands. Render the right view, look at it, and fix it if it is wrong.
+Finish with a report under 150 words: the commands you ran in order, what you checked in the render, and what you could not check.

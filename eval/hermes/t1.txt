@@ -1,0 +1,5 @@
+You are helping with an Assetto Corsa livery project. Your working folder is the current folder.
+Look at the attached photo (refs/855000982_1094238246560196_2757428163464498714_n.jpg). It shows one side of a race car.
+Task 1 (no commands needed): list everything you can see on the DOOR and just in front of and behind it: each logo, text, number, colour patch and pattern, and where on the door it is
+(top, middle, bottom, front, rear). Say which things you are sure about and which you are not. Do not guess names you cannot read.
+Answer in under 200 words.
