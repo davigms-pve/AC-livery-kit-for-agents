@@ -66,6 +66,9 @@ export const suggestSource = (l) => (l.source && SOURCES.includes(l.source) ? l.
       : l.kind === 'marking' ? 'stock' : 'construct');
 
 const text = (v) => String(v ?? '').trim();
+/** The names a photo's view may have (the cameras `render` and `compare` know, plus "detail" for a close-up of one part: say which part in the notes). */
+export const VIEWS = ['left', 'right', 'front', 'rear', 'top', 'front-left', 'front-right', 'rear-left', 'rear-right', 'three-quarter', 'detail'];
+const viewOf = (r) => text(r.view).toLowerCase().replace(/_/g, '-');
 /** The basic views a livery is read from. A slot is covered by any photo with one of its views, or waived by the user ("viewsWaived": ["top"]). */
 export const VIEW_SLOTS = [
   { id: 'side', label: 'a flat side of the car (straight from the left or the right)', views: ['left', 'right'], consequence: 'the doors and sides will be copied from the three-quarter photos only' },
@@ -118,11 +121,11 @@ export function gaps(b, { packExists = false, fileExists = (p) => fs.existsSync(
   // Every photo the user gave gets looked at and given a view; then the basic views are checked, and a missing one is a question for the user
   // (a photo of the roof is often the only place a big graphic shows), not something to skip quietly.
   const refs = b.references ?? [];
-  const unviewed = refs.map((r, i) => ({ r, i })).filter(({ r }) => r.file && !text(r.view));
+  const unviewed = refs.map((r, i) => ({ r, i })).filter(({ r }) => r.file && !VIEWS.includes(viewOf(r)));
   if (unviewed.length) {
-    todo.push({ ask: null, do: `look at every photo and give each a view (left, right, front, rear, top, front-left, front-right, rear-left, rear-right) and a note of what it shows. If you have not made the contact sheets yet: aclivery photos <the user's photo folder> --brief ${b.slug ?? '<slug>'}. Photos without a view: ${unviewed.map(({ i }) => i).join(', ')}`, set: `references.${unviewed[0].i}.view` });
+    todo.push({ ask: null, do: `look at every photo and give each a view: one of ${VIEWS.join(', ')} (detail = a close-up of one part: say which in the notes), and a note of what it shows. If you have not made the contact sheets yet: aclivery photos <the user's photo folder> --brief ${b.slug ?? '<slug>'}. Photos without a valid view: ${unviewed.map(({ r, i }) => (text(r.view) ? `${i} ("${text(r.view)}" is not a view name)` : i)).join(', ')}`, set: `references.${unviewed[0].i}.view` });
   } else if (refs.length) {
-    const have = new Set(refs.map((r) => text(r.view))), waived = new Set((b.viewsWaived ?? []).map(String));
+    const have = new Set(refs.map(viewOf)), waived = new Set((b.viewsWaived ?? []).map(String));
     const slot = VIEW_SLOTS.find((s) => !waived.has(s.id) && !s.views.some((v) => have.has(v)));
     if (slot) {
       todo.push({ ask: `I do not see a photo of ${slot.label} among the ones you gave me. Do you have one? If you add it to the folder I will look at it. If not, I will say so in the report and ${slot.consequence}.`,

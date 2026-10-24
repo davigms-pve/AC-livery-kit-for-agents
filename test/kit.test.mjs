@@ -899,9 +899,14 @@ test('photos: every photo gets a numbered sheet and is added to the brief once; 
   const b = saved();
   assert.match(gaps(b, { packExists: true })[0].ask, /How involved do you want to be/);   // the first question is how involved the user wants to be
   b.mode = 'normal';
-  assert.match(gaps(b, { packExists: true })[0].do, /give each a view.*Photos without a view: 0, 1, 2, 3, 4, 5, 6/);
-  b.references.forEach((r, i) => { r.view = i === 0 ? 'right' : 'front-left'; });
-  // ...then the basic views: no front-on beyond the three-quarters counts as "the front", but nothing shows the rear or the top
+  assert.match(gaps(b, { packExists: true })[0].do, /give each a view.*Photos without a valid view: 0, 1, 2, 3, 4, 5, 6/);
+  b.references[0].view = 'left_close'; b.references.slice(1).forEach((r) => { r.view = 'front-left'; });
+  assert.match(gaps(b, { packExists: true })[0].do, /Photos without a valid view: 0 \("left_close" is not a view name\)/);   // an invented view name is flagged, not accepted
+  b.references[0].view = 'right';
+  b.references[1].view = 'Rear_Left';   // a different spelling of a real view is accepted: it covers the rear
+  assert.match(gaps(b, { packExists: true })[0].ask, /the car from above/);
+  // ...then the basic views: nothing shows the rear or the top
+  b.references[1].view = 'front-left';
   let ask = gaps(b, { packExists: true })[0];
   assert.match(ask.ask, /I do not see a photo of the rear/);
   assert.match(ask.then, /aclivery photos <folder> --brief ph .*viewsWaived '\["rear"\]'/);

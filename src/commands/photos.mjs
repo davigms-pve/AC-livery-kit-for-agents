@@ -10,7 +10,7 @@ export const help = `aclivery photos <folder> [--brief <slug>] [--out <dir>] [--
   (numbered as in the brief), still without a view: you give each one a view after looking.
   --out   where the sheets go (default .aclivery/renders/photos-<time>). --per  photos per sheet (4 to 9, default 6).
   Then: open each sheet, and for every number decide the view (left, right, front, rear, top, front-left, front-right,
-  rear-left, rear-right) and a one-line note of what it shows: aclivery brief set <slug> references.N.view <view>
+  rear-left, rear-right, or detail for a close-up of one part) and a one-line note of what it shows: aclivery brief set <slug> references.N.view <view>
   Safe to run again after the user adds photos: photos already in the brief are skipped.`;
 
 const IMAGE = /\.(jpe?g|png|webp)$/i;
