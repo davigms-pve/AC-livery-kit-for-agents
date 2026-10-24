@@ -34,6 +34,7 @@ short skills that tell a model how to drive them.**
 ## Commands
 
 ```
+aclivery photos <folder> --brief <slug>           look at ALL the user's photos (numbered contact sheets, added to the brief)
 aclivery car prep <car.kn5> --skins <skins dir>   one-time: build the car pack
 aclivery panel list|get|regions|textures <car>    which panels exist, where, which way up
 aclivery apply design.json [--export]            build the whole skin from one design file (assets, layers, sheet, zip)
@@ -48,7 +49,8 @@ aclivery export work --car <id> --name "My Skin"  PNG -> DDS, zip for Content Ma
 ```
 
 Skills for agents live in [skills/](skills) (index in [skills/README.md](skills/README.md)) (`SKILL.md`, the Hermes / agentskills format). Start with
-[ac-livery](skills/ac-livery/SKILL.md).
+[ac-livery](skills/ac-livery/SKILL.md). The agent works **with the user**: it looks at every photo they give it, checks it has the basic views, and asks
+about anything it cannot find or is unsure of ([ac-intake](skills/ac-intake/SKILL.md)); it does not guess in silence.
 
 ## Quick start
 

@@ -1,0 +1,4 @@
+Hey! I want the T. Thiele #71 Monster Energy Ultra livery for my Assetto Corsa car, the RSS GT-M Protech P92 F6 (the car is already set up in this kit as rss_gtm_protech_p92_f6).
+The photos of the real livery are in the photos/ folder, there are 15 of them. The logos I have are in assets/logos.
+This folder is a livery kit with its own instructions, so start with README.md. If anything is unclear or you can't find something, just ask me, one thing at a time.
+When you're done, show me the result and tell me what's missing or uncertain.
