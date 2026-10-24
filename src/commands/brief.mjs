@@ -17,6 +17,8 @@ aclivery brief list                                     all projects
   "tone":"bold","confidence":"high|medium|low","evidence":"which reference photo and view shows it"}],
   "overlapRules":"which things must not cover each other","feel":"what makes it recognisable"} (see skill ac-analyze).
   Every layer needs confidence and evidence; low confidence (or a brand read by shape only) becomes a question for the user.
+  When the user cannot be asked (a batch run), take the default and write it down: layer "assumed": "default: user not asked, <why>"
+  (stops the question, shows in the report and in DONE); an open question stored as {"q":"...","default":"...","by":"..."} does the same.
   Then every layer needs a "source": fetch (a brand mark that exists as a file; set "asset" to the prepared file), generate (livery art with no file: a pattern),
   construct (text, numbers, plates, colours), stock (already on the car) or skip (with "why"). See docs/agent-flow.md.`;
 
@@ -59,6 +61,12 @@ export const suggestSource = (l) => (l.source && SOURCES.includes(l.source) ? l.
     : l.kind === 'tonal-art' ? 'generate'
       : l.kind === 'marking' ? 'stock' : 'construct');
 
+const text = (v) => String(v ?? '').trim();
+/** A layer the user could not be asked about (a batch run): "assumed": "default: user not asked, <why>". Not a gap; listed in the report and in DONE. */
+const assumedOf = (l) => text(l.assumed);
+/** An open question that already carries the default taken and who took it: {"q","default","by"}. */
+const answeredByDefault = (q) => !!q && typeof q === 'object' && !!text(q.default) && !!text(q.by);
+const questionText = (q) => (q && typeof q === 'object' ? text(q.q) || JSON.stringify(q) : String(q));
 const hasReport = (b) => typeof b.report === 'string' ? b.report.trim() !== '' : !!b.report && Object.keys(b.report).length > 0;
 
 /** What the final report must name: layers drawn from placeholder art, and layers left out (with the reason given). */
@@ -68,6 +76,8 @@ export function openNotes(b) {
   return {
     placeholders: live.filter(({ l }) => l.source === 'generate' || /placeholder/i.test(String(l.asset ?? ''))).map((x) => `${name(x)} (${x.l.source === 'generate' ? 'generated pattern' : 'placeholder file'})`),
     skipped: live.filter(({ l }) => l.source === 'skip').map((x) => `${name(x)}: ${String(x.l.why ?? '').trim() || 'no reason given'}`),
+    assumed: [...live.filter(({ l }) => assumedOf(l)).map((x) => `${name(x)}: ${assumedOf(x.l)}`),
+      ...(b.openQuestions ?? []).filter(answeredByDefault).map((q) => `question "${text(q.q).slice(0, 60)}": ${text(q.default)} (${text(q.by)})`)],
   };
 }
 
@@ -90,7 +100,8 @@ export function gaps(b, { packExists = false, fileExists = (p) => fs.existsSync(
     todo.push({ ask: null, do: `review your analysis: for each layer add "confidence" (high = clearly seen and identified in a photo; medium = seen but small, or identified by shape or context only; low = a guess) and "evidence" (which reference photo and view shows it). Missing on: ${unrated.map(({ l, i }) => `${i} "${l.what ?? l.kind}"`).join(', ')}`, set: `analysis.layers.${unrated[0].i}.confidence` });
   } else {
     layers.forEach((l, i) => {
-      if (l.confidence === 'low') {
+      if (assumedOf(l)) return;   // a batch run could not ask: the default was taken and written down; it is listed in the report instead
+      if (l.confidence === 'low' && !(l.source === 'skip' && text(l.why))) {   // a layer left out with a reason builds no guess
         todo.push({ ask: `I am not sure about "${l.what}" (evidence: ${l.evidence}). What is it, and how would you describe it?`, set: `analysis.layers.${i}.what`, then: `aclivery brief set ${b.slug ?? '<slug>'} analysis.layers.${i}.confidence high` });
       } else if (l.confidence === 'medium' && l.brand && /logo|large-graphic/.test(l.kind ?? '')) {
         todo.push({ ask: `I read "${l.what}" as ${l.brand}${l.part ? ' ' + l.part : ''} (evidence: ${l.evidence}). Is that right?`, do: 'if yes, set confidence high; if not, correct "brand" and "what" first', set: `analysis.layers.${i}.confidence` });
@@ -141,13 +152,14 @@ export function gaps(b, { packExists = false, fileExists = (p) => fs.existsSync(
         else if ((b.build.round ?? 0) < ROUNDS) todo.push({ ask: null, do: `rounds done: ${b.build.round} of at least ${ROUNDS} (more are fine while the differences are big). Look at compare.png, name the 3 to 5 biggest differences from the references, fix those in the design, apply again` });
         else if (!b.build.exported) todo.push({ ask: null, do: 'export: aclivery apply <design> --export, then aclivery validate skin <dist folder>/<Name>' });
         else if (!hasReport(b)) {
-          const { placeholders, skipped } = openNotes(b);
-          todo.push({ ask: null, do: `write the report (what is built; placeholders: ${placeholders.join('; ') || 'none'}; skipped: ${skipped.join('; ') || 'none'}; and that none of it was verified in the game until the user loads it in Content Manager and says so)`, set: 'report' });
+          const { placeholders, skipped, assumed } = openNotes(b);
+          todo.push({ ask: null, do: `write the report (what is built; placeholders: ${placeholders.join('; ') || 'none'}; skipped: ${skipped.join('; ') || 'none'}; assumed, not confirmed by the user: ${assumed.join('; ') || 'none'}; and that none of it was verified in the game until the user loads it in Content Manager and says so)`, set: 'report' });
         }
       }
     }
   }
-  if (b.openQuestions?.length) todo.push({ ask: `Open question: ${b.openQuestions[0]}`, note: 'decide with the user, then add a decision and remove it from openQuestions' });
+  const openQs = (b.openQuestions ?? []).filter((q) => !answeredByDefault(q));
+  if (openQs.length) todo.push({ ask: `Open question: ${questionText(openQs[0])}`, note: 'decide with the user, then add a decision and remove it from openQuestions. In a run where the user cannot be asked, store it as {"q","default","by"} (the default taken and who took it): it then stops blocking and is listed in the report' });
   return todo;
 }
 
@@ -190,17 +202,19 @@ export async function run(argv) {
     if (b.build) console.log(`  built: ${b.build.part ? `part [${b.build.part}] after ` : ''}round ${b.build.round}, ${b.build.elements} element(s) in ${b.build.design}, ${b.build.missing} layer(s) missing, ${b.build.cutOff} cut off  (the design file, not this list, is the source of truth)`);
     const planRows = (b.analysis?.layers ?? []).map((l, i) => [i, l]).filter(([, l]) => l.kind !== 'base' && l.source);
     for (const [i, l] of planRows) {
-      if (l.source === 'skip') { console.log(`    L${i} [skip] ${String(l.what).slice(0, 48)}  skipped: ${String(l.why ?? '').trim() || 'NO REASON GIVEN'}`); continue; }
+      const as = assumedOf(l) ? `  [assumed: ${assumedOf(l)}]` : '';
+      if (l.source === 'skip') { console.log(`    L${i} [skip] ${String(l.what).slice(0, 48)}  skipped: ${String(l.why ?? '').trim() || 'NO REASON GIVEN'}${as}`); continue; }
       const state = l.source === 'fetch' ? (l.asset ? (/placeholder/i.test(l.asset) ? 'PLACEHOLDER' : fs.existsSync(l.asset) ? 'file ok' : 'FILE MISSING') : 'NO FILE YET') : '';
-      console.log(`    L${i} [${l.source}] ${String(l.what).slice(0, 48)}${state ? '  ' + state : ''}${l.built ? (l.built.part ? '  built (part build)' : '  built r' + l.built.round) : '  not built'}`);
+      console.log(`    L${i} [${l.source}] ${String(l.what).slice(0, 48)}${state ? '  ' + state : ''}${l.built ? (l.built.part ? '  built (part build)' : '  built r' + l.built.round) : '  not built'}${as}`);
     }
-    for (const [i, r] of (b.references ?? []).entries()) console.log(`    ref ${i}. ${path.basename(r.file ?? '?')}  view: ${r.view ?? '?'}${r.notes ? '  ' + r.notes : ''}`);
+    for (const [i, r] of (b.references ?? []).entries()) console.log(`    ref ${i}. ${r.file ?? '?'}  view: ${r.view ?? '?'}${r.notes ? '  ' + r.notes : ''}`);
     for (const [i, e] of (b.elements ?? []).entries()) console.log(`    ${i}. ${e.what}  ->  ${e.panel ?? e.target ?? '?'}  [${e.status ?? 'idea'}]${e.asset ? '  ' + path.basename(e.asset) : ''}`);
     if (!todo.length && b.build?.exported && hasReport(b)) {
-      const { placeholders, skipped } = openNotes(b);
+      const { placeholders, skipped, assumed } = openNotes(b);
       console.log(`\nDONE: ${b.build.round} full-build round(s), exported, report written.`);
       console.log(`  placeholders: ${placeholders.join('; ') || 'none'}`);
       console.log(`  skipped: ${skipped.join('; ') || 'none'}`);
+      console.log(`  assumed, not confirmed by the user: ${assumed.join('; ') || 'none'}`);
       console.log(`  report: ${typeof b.report === 'string' ? b.report : JSON.stringify(b.report)}`);
       console.log('  Not verified in the game until the user loads the zip in Content Manager and says so.');
       return 0;

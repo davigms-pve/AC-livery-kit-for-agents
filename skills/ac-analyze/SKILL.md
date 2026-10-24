@@ -57,6 +57,9 @@ aclivery brief set <slug> analysis '{"summary":"...","layers":[...],"overlapRule
   The same brand often has two parts on the car (a symbol and a wordmark): list them as two layers.
 - **Doubt is information, not failure.** A `low` layer becomes a question to the user that quotes your evidence ("I am not sure about the
   small script near the roof (b.jpg front): what is it?"). Ask it; do not build a guess into the livery. Record the answer in the brief.
+  **If you cannot ask** (a batch run, no user to answer): take the default, add it to `decisions`, and mark the layer
+  `"assumed": "default: user not asked, <why>"` (an open question: `{"q","default","by"}`). That stops the question, and the report and `brief show` list it as
+  "assumed, not confirmed by the user". A low-confidence layer you build still needs the question or a stronger read; one you skip (with a `why`) does not.
 - **Self-check before you place anything:** re-read each layer as if someone else wrote it. Could you point to the photo? Did you mix up two
   similar marks? Did you split symbol and wordmark? Are numbers or lettering in a made-up style (note the style: italic, stencil, brush)?
 - Do not keep a list of elements in the brief. The layers are the plan: the next step gives each layer a `source` (`fetch`, `generate`, `construct`, `stock` or `skip` with a `why`),

@@ -313,7 +313,9 @@ const STOP = new Set(['the', 'and', 'with', 'from', 'that', 'this', 'both', 'all
 const words = (s) => String(s ?? '').toLowerCase().split(/[^a-z0-9]+/).filter((w) => w.length >= 4 && !STOP.has(w));
 /** Location words in an analysis layer's "where", with a test for the car's region names. A region the car does not have is ignored. */
 const PLACES = [
-  ['hood', /\b(hood|bonnet)\b/i, /hood|bonnet/i], ['roof', /\broof\b/i, /roof/i], ['doors', /\b(doors?|sides?|sills?)\b/i, /side|door/i],
+  ['hood', /\b(hood|bonnet)\b/i, /hood|bonnet/i], ['roof', /\broof\b(?!\s+(edges?|strips?|rails?))/i, /roof/i],
+  // The roof edge strip (the driver name, the flag) sits on the upper edge of the side panels, which the car's regions file under the sides.
+  ['roof edge', /\broof\s+(edges?|strips?|rails?)\b/i, /roof|side/i], ['doors', /\b(doors?|sides?|sills?)\b/i, /side|door/i],
   ['wing', /\b(wing|endplates?|spoiler)\b/i, /wing/i],
   // "rear" alone means the back of the car; "rear quarter", "rear fender", "rear wheel" and the like are on the side, so they are left to those words.
   ['rear', /\b(rear (bumper|deck|window)|tail|deck|diffuser)\b|\brear\b(?!\s+(quarters?|fenders?|wheels?|doors?|sides?|view|three))/i, /rear|tail/i],

@@ -496,6 +496,11 @@ test('coverage: "rear", "quarter" and "fender" are place words; "rear quarter" i
   assert.equal(miss('front fender', 'sidep').length, 1);        // the fender is on the hood region
   assert.equal(miss('front fender', 'hoodp').length, 0);
   assert.equal(miss('rear fender', 'sidep').length, 0);         // not the front fender
+  const roofRegions = { regions: [...regions.regions, { name: 'roof', panels: [{ name: 'roofp' }] }] };
+  const missR = (where, panel) => coverage(design(panel), brief(where), roofRegions).filter((m) => /says "/.test(m));
+  assert.equal(missR('roof edge strip', 'sidep').length, 0);    // the roof edge strip lives on the side panels
+  assert.equal(missR('roof', 'sidep').length, 1);               // a plain "roof" still needs the roof
+  assert.equal(missR('roof', 'roofp').length, 0);
 });
 
 test('decal: a wide image on a 90 or 270 degree panel keeps its proportions (regression: sharp rotated before resizing)', async () => {
@@ -595,7 +600,7 @@ test('brief: shows the references and takes the base colour from the analysis', 
   const home = tmp(), env = { ACLIVERY_HOME: home };
   run(['brief', 'init', 'rf', '--title', 'T', '--car', 'c'], env);
   run(['brief', 'add', 'rf', 'references', '{"file":"C:/x/photo_one.jpg","view":"right"}'], env);
-  assert.match(run(['brief', 'show', 'rf'], env).stdout, /ref 0\. photo_one\.jpg {2}view: right/);
+  assert.match(run(['brief', 'show', 'rf'], env).stdout, /ref 0\. C:\/x\/photo_one\.jpg {2}view: right/);   // the full path, so a model need not open brief.json to find the photo
 });
 
 test('apply --check: suggests the nearest box fully on the painted surface when an element is cut off', async () => {
@@ -842,4 +847,30 @@ test('compare: --crop is checked, --each needs a folder, and the pair sheet zoom
   const base = ['compare', 'nocar', '--skin', dir, '--ref', ref, '--views', 'right'];
   assert.match(run([...base, '--crop', '2,0,1,1']).stderr, /--crop must be x,y,w,h/);
   assert.match(run([...base, '--each', '--out', 'x.png']).stderr, /--each writes one image per reference into a folder/);
+});
+
+test('brief: a batch run can take a default and write it down; that clears the question and is listed in the report and in DONE', async () => {
+  const { gaps, openNotes } = await import('../src/commands/brief.mjs');
+  const layer = (o) => ({ confidence: 'high', evidence: 'a.jpg left', ...o });
+  const b = { slug: 'as', car: { id: 'x' }, references: [{ file: 'a.jpg', view: 'left' }], analysis: { layers: [
+    layer({ kind: 'base', what: 'white' }),
+    layer({ kind: 'logo', what: 'Porsche crest', brand: 'Porsche', part: 'symbol', confidence: 'medium', source: 'construct' }),
+    layer({ kind: 'text', what: 'faint script', confidence: 'low', source: 'skip', why: 'cannot read it' }) ] } };
+  const next = () => gaps(b, { packExists: true, fileExists: () => true })[0];
+  assert.match(next().ask, /I read "Porsche crest" as Porsche symbol/);          // the brand read still asks the user...
+  b.analysis.layers[1].assumed = 'default: user not asked, the shape matches the crest in two photos';
+  assert.doesNotMatch(next()?.ask ?? '', /Porsche crest/);                        // ...until the default is written down
+  assert.equal(gaps(b, { packExists: true, fileExists: () => true }).some((t) => /not sure about "faint script"/.test(t.ask ?? '')), false);   // a skipped low layer builds no guess
+  b.analysis.layers[2].source = 'construct'; delete b.analysis.layers[2].why;
+  assert.match(next().ask, /not sure about "faint script"/);                      // a low layer that is built still asks
+  b.analysis.layers[2].source = 'skip'; b.analysis.layers[2].why = 'cannot read it';
+  // open questions: a bare string blocks, {q, default, by} does not and is listed
+  b.openQuestions = ['Is the wing white?'];
+  assert.ok(gaps(b, { packExists: true, fileExists: () => true }).some((t) => /Open question: Is the wing white\?/.test(t.ask ?? '')));
+  b.openQuestions = [{ q: 'Is the wing white?', default: 'white with dark PORSCHE', by: 'default, user not asked' }];
+  assert.equal(gaps(b, { packExists: true, fileExists: () => true }).some((t) => /Open question/.test(t.ask ?? '')), false);
+  const { assumed } = openNotes(b);
+  assert.equal(assumed.length, 2);
+  assert.match(assumed[0], /L1 "Porsche crest": default: user not asked/);
+  assert.match(assumed[1], /question "Is the wing white\?": white with dark PORSCHE \(default, user not asked\)/);
 });
