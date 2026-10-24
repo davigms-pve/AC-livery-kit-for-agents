@@ -13,6 +13,7 @@ import { run as render } from './render.mjs';
 import { run as compare } from './compare.mjs';
 import { run as exportSkin } from './export.mjs';
 import { decodeTexture } from '../engine.mjs';
+import { decidedLayer } from './brief.mjs';
 import { PATTERNS, TONAL, DEFAULTS, DEFAULT_DENSITY, DISCREET, makePattern, renderPattern, luma } from '../lib/patterns.mjs';
 
 export const help = `aclivery apply <design.json> [--out dir] [--only role,...] [--check] [--no-render] [--export]
@@ -313,9 +314,9 @@ const STOP = new Set(['the', 'and', 'with', 'from', 'that', 'this', 'both', 'all
 const words = (s) => String(s ?? '').toLowerCase().split(/[^a-z0-9]+/).filter((w) => w.length >= 4 && !STOP.has(w));
 /** Location words in an analysis layer's "where", with a test for the car's region names. A region the car does not have is ignored. */
 const PLACES = [
-  ['hood', /\b(hood|bonnet)\b/i, /hood|bonnet/i], ['roof', /\broof\b(?!\s+(edges?|strips?|rails?))/i, /roof/i],
+  ['hood', /\b(hood|bonnet)\b/i, /hood|bonnet/i], ['roof', /\broof\b(?![\s-]+(edges?|strips?|rails?))/i, /roof/i],
   // The roof edge strip (the driver name, the flag) sits on the upper edge of the side panels, which the car's regions file under the sides.
-  ['roof edge', /\broof\s+(edges?|strips?|rails?)\b/i, /roof|side/i], ['doors', /\b(doors?|sides?|sills?)\b/i, /side|door/i],
+  ['roof edge', /\broof[\s-]+(edges?|strips?|rails?)\b/i, /roof|side/i], ['doors', /\b(doors?|sides?|sills?)\b/i, /side|door/i],
   ['wing', /\b(wing|endplates?|spoiler)\b/i, /wing/i],
   // "rear" alone means the back of the car; "rear quarter", "rear fender", "rear wheel" and the like are on the side, so they are left to those words.
   ['rear', /\b(rear (bumper|deck|window)|tail|deck|diffuser)\b|\brear\b(?!\s+(quarters?|fenders?|wheels?|doors?|sides?|view|three))/i, /rear|tail/i],
@@ -335,7 +336,8 @@ const KIND_OK = {
  */
 export function coverage(design, brief, regions) {
   // A layer left out on purpose ("source": "skip" with a "why") is not a gap; one skipped without a reason still is.
-  const layers = (brief?.analysis?.layers ?? []).map((l, i) => ({ l, i })).filter(({ l }) => l.kind && l.kind !== 'base' && !(l.source === 'skip' && String(l.why ?? '').trim()));
+  const decided = new Set((brief?.decisions ?? []).map(decidedLayer).filter((n) => n !== null));   // a decision tagged with the layer closes it
+  const layers = (brief?.analysis?.layers ?? []).map((l, i) => ({ l, i })).filter(({ l, i }) => l.kind && l.kind !== 'base' && !decided.has(i) && !(l.source === 'skip' && String(l.why ?? '').trim()));
   if (!layers.length) return [];
   const items = [];
   for (const [role, t] of Object.entries(design.textures ?? {})) for (const [i, e] of (t.elements ?? []).entries()) {
@@ -344,6 +346,7 @@ export function coverage(design, brief, regions) {
     items.push({ e, role, i, panels, hay });
   }
   const regionOf = (name) => (regions?.regions ?? []).filter((r) => (r.panels ?? []).some((p) => p.name === name)).map((r) => r.name);
+  const leave = (i) => `leave it out on purpose and say why: aclivery brief add ${brief?.slug ?? '<slug>'} decisions '{"layer":${i},"q":"...","a":"why it is left out","by":"user or default"}' and run apply again.`;
   const out = [];
   const answered = [];
   for (const { l, i } of layers) {
@@ -354,8 +357,8 @@ export function coverage(design, brief, regions) {
     const named = items.filter((it) => ok(it.e) && [...keys].some((k) => it.hay.includes(k)));
     const mine = explicit.length ? explicit : named.length ? named : items.filter((it) => ok(it.e));
     const label = `layer ${i} "${String(l.what ?? l.kind).slice(0, 60)}" (${l.kind})`;
-    if (!explicit.length && !named.length && !['tonal-art', 'accent', 'plate', 'marking'].includes(l.kind)) { out.push(`${label}: no element answers it (no text, image name or "covers" matches). Add one, or record a decision in the brief for leaving it out.`); continue; }
-    if (!mine.length) { out.push(`${label}: the design has no element of this kind. Add one, or record a decision for leaving it out.`); continue; }
+    if (!explicit.length && !named.length && !['tonal-art', 'accent', 'plate', 'marking'].includes(l.kind)) { out.push(`${label}: no element answers it (no text, image name or "covers" matches). Add one, or ${leave(i)}`); continue; }
+    if (!mine.length) { out.push(`${label}: the design has no element of this kind. Add one, or ${leave(i)}`); continue; }
     if (l.source === 'fetch' && l.asset) {
       const want = path.basename(String(l.asset)).toLowerCase(), used = Object.values(design.assets ?? {}).map((a) => path.basename(String(typeof a === 'string' ? a : a?.file ?? '')).toLowerCase());
       if (!used.includes(want)) { out.push(`${label} is a brand mark to fetch (${path.basename(String(l.asset))}) but no asset of the design uses that file. Use it (cut with prep), or change the layer's source and say why.`); continue; }
@@ -364,7 +367,7 @@ export function coverage(design, brief, regions) {
     for (const p of places(l.where)) {
       const here = mine.some((it) => it.panels.includes('*') || it.panels.some((pn) => regionOf(pn).some((r) => p.inRegion.test(r))) || it.role !== 'ext_main');
       const known = (regions?.regions ?? []).some((r) => p.inRegion.test(r.name));
-      if (known && !here) out.push(`${label} says "${p.name}" but no matching element sits there. Add it, or record a decision.`);
+      if (known && !here) out.push(`${label} says "${p.name}" but no matching element sits there. Add it, or leave it out on purpose: aclivery brief add ${brief?.slug ?? '<slug>'} decisions '{"layer":${i},"q":"...","a":"why it is left out","by":"user or default"}' and run apply again.`);
     }
     if (out.length === before) answered.push(i);
   }
@@ -542,7 +545,7 @@ export async function run(argv) {
       } catch { /* the brief is optional */ }
     }
     if (only) console.log(`  next: a part build is not a round. Build the other textures the same way, then run apply without --only: that full build is round ${round + 1}.`);
-    else if (!flags['no-render']) console.log('  next: open ' + (design.brief ? 'compare.png' : 'sheet.png') + ', first fix every "missing" line (add the element, or record a decision in the brief for leaving it out), then name the 3 to 5 biggest differences from the references (the wrong size, the wrong place, too faint), change those in the design file, run apply again. Do at least 3 rounds; more are fine while the differences are big, stop when they are small.');
+    else if (!flags['no-render']) console.log('  next: open ' + (design.brief ? 'compare.png' : 'sheet.png') + ', first fix every "missing" line (add the element, or leave it out with a decision that names the layer: aclivery brief add <slug> decisions {"layer":N,"a":"why"}), then name the 3 to 5 biggest differences from the references (the wrong size, the wrong place, too faint), change those in the design file, run apply again. Do at least 3 rounds; more are fine while the differences are big, stop when they are small. Skills: ac-render (reading compare.png), ac-verify (one element against a reference crop).');
   }
 
   if (flags.export) {

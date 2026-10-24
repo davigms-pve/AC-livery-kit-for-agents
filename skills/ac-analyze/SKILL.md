@@ -35,7 +35,8 @@ aclivery brief set <slug> analysis '{"summary":"...","layers":[...],"overlapRule
 
 ## Method
 
-- **Views worth finding before you decide the layers are complete:** a straight front, a flat side, a close-up of a door, the rear, and above all a **top view** (roof, wing top and rear window show nowhere else). If the brief has none, look through the folder of photos for one. This is a suggestion from experience, not a rule: a livery may need others.
+- **Every photo is looked at first** (`ac-intake`: `aclivery photos <folder> --brief <slug>`), so you work from all of them, not a few. `brief show` checks that a flat side, the front, the rear and the top are covered, or that the user said there is no photo of one. A photo may be the only place a part of the livery shows (roof, wing top and rear window show nowhere else), so a layer that is only in one photo still gets listed.
+- **Ask when unsure.** A part you cannot place, a mark you read by shape, text you cannot read, two photos that disagree: ask the user (plain words, a default, one question at a time) instead of guessing; see `ac-intake`.
 
 - Look at each reference in turn; note which view it is (`left` means the car's left side, nose to the left of the picture).
 - Use more than one photo per element: size and colour are easier to judge from a straight side or front view.

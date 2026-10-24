@@ -20,7 +20,7 @@ Give `--out` paths you can find again; without `--out`, renders go to `.aclivery
 
 The brief is your only memory. After EVERY step run `aclivery brief show <slug>`: it prints the next step from what is recorded. If you lose your thread, run it.
 
-1. **Intake** (`ac-intake`): car pack (`ac-car-prep`), references with a view each (work the view out with `ac-read-photo`). Look for a flat side, a door close-up, the front, the rear and a top view.
+1. **Intake** (`ac-intake`): car pack (`ac-car-prep`); look at **all** the user's photos (`aclivery photos <folder> --brief <slug>`) and give each a view (`ac-read-photo`). `brief show` checks a flat side, the front, the rear and a top view are covered, and a missing one is a question for the user. Ask the user whenever a part, a logo or a text is unclear or missing; one question at a time, plain words.
 2. **Analysis** (`ac-analyze`): layers with `where` in the car's own words, `confidence` and `evidence`. Run `aclivery car notes <id>` first.
 3. **Sourcing plan**: set `source` on every layer: `fetch` (a brand mark that exists as a file: never redraw it), `generate` (livery art with no file: a pattern placeholder), `construct` (text, numbers, plates, colours), `stock` (already on the car), `skip` (with `why`).
 4. **Assets** (`ac-logos`): for every `fetch` layer find the brand's file in `assets/logos`, cut the mark out with `logo prep`, set the layer's `asset`. No file: ask the user for a source to download from; wait for the yes.

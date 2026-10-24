@@ -14,12 +14,14 @@ const commands = {
   status: () => import('../src/commands/status.mjs'),
   apply: () => import('../src/commands/apply.mjs'),
   export: () => import('../src/commands/export.mjs'),
+  photos: () => import('../src/commands/photos.mjs'),
 };
 
 const summary = `aclivery: Assetto Corsa livery helper for agents. Few commands, short output.
 
   aclivery status                      where am I? what is ready, and the usual next step
   aclivery brief init|show|set|add     the project's memory: decisions, what is missing, THE next step
+  aclivery photos <folder>             look at ALL the user's photos: numbered contact sheets, added to the brief
   aclivery car prep <car.kn5>          one-time: build a small car pack from the model
   aclivery panel list <car> ...        which panels exist, where, which way up, how visible
   aclivery render <car> --skin <dir>   draw the car wearing a skin (one contact-sheet image)

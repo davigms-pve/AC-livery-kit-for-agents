@@ -17,6 +17,8 @@ aclivery brief list                                     all projects
   "tone":"bold","confidence":"high|medium|low","evidence":"which reference photo and view shows it"}],
   "overlapRules":"which things must not cover each other","feel":"what makes it recognisable"} (see skill ac-analyze).
   Every layer needs confidence and evidence; low confidence (or a brand read by shape only) becomes a question for the user.
+  Photos: aclivery photos <folder> --brief <slug> adds every photo; give each a view. If the user has no photo of a basic view (side, front, rear, top):
+  aclivery brief set <slug> viewsWaived '["top"]'.
   When the user cannot be asked (a batch run), take the default and write it down: layer "assumed": "default: user not asked, <why>"
   (stops the question, shows in the report and in DONE); an open question stored as {"q":"...","default":"...","by":"..."} does the same.
   Then every layer needs a "source": fetch (a brand mark that exists as a file; set "asset" to the prepared file), generate (livery art with no file: a pattern),
@@ -62,10 +64,19 @@ export const suggestSource = (l) => (l.source && SOURCES.includes(l.source) ? l.
       : l.kind === 'marking' ? 'stock' : 'construct');
 
 const text = (v) => String(v ?? '').trim();
+/** The basic views a livery is read from. A slot is covered by any photo with one of its views, or waived by the user ("viewsWaived": ["top"]). */
+export const VIEW_SLOTS = [
+  { id: 'side', label: 'a flat side of the car (straight from the left or the right)', views: ['left', 'right'], consequence: 'the doors and sides will be copied from the three-quarter photos only' },
+  { id: 'front', label: 'the front', views: ['front', 'front-left', 'front-right'], consequence: 'the hood and nose cannot be copied from a photo' },
+  { id: 'rear', label: 'the rear', views: ['rear', 'rear-left', 'rear-right'], consequence: 'the rear bumper, the deck and the back of the wing cannot be copied from a photo' },
+  { id: 'top', label: 'the car from above', views: ['top'], consequence: 'the roof and the top of the wing cannot be copied from a photo' },
+];
 /** A layer the user could not be asked about (a batch run): "assumed": "default: user not asked, <why>". Not a gap; listed in the report and in DONE. */
 const assumedOf = (l) => text(l.assumed);
 /** An open question that already carries the default taken and who took it: {"q","default","by"}. */
 const answeredByDefault = (q) => !!q && typeof q === 'object' && !!text(q.default) && !!text(q.by);
+/** A decision about a layer that closes its "missing" line: {"layer": 11, "q": "...", "a": "...", "by": "..."}. Returns the layer number, or null. */
+export const decidedLayer = (d) => (d && typeof d === 'object' && d.layer !== undefined && /^\d+$/.test(String(d.layer)) && text(d.a ?? d.answer ?? d.why) ? Number(d.layer) : null);
 const questionText = (q) => (q && typeof q === 'object' ? text(q.q) || JSON.stringify(q) : String(q));
 const hasReport = (b) => typeof b.report === 'string' ? b.report.trim() !== '' : !!b.report && Object.keys(b.report).length > 0;
 
@@ -76,6 +87,8 @@ export function openNotes(b) {
   return {
     placeholders: live.filter(({ l }) => l.source === 'generate' || /placeholder/i.test(String(l.asset ?? ''))).map((x) => `${name(x)} (${x.l.source === 'generate' ? 'generated pattern' : 'placeholder file'})`),
     skipped: live.filter(({ l }) => l.source === 'skip').map((x) => `${name(x)}: ${String(x.l.why ?? '').trim() || 'no reason given'}`),
+    decided: (b.decisions ?? []).filter((d) => decidedLayer(d) !== null).map((d) => `L${decidedLayer(d)}: ${text(d.a ?? d.answer ?? d.why)}${text(d.by) ? ` (${text(d.by)})` : ''}`),
+    waived: (b.viewsWaived ?? []).map(String),
     assumed: [...live.filter(({ l }) => assumedOf(l)).map((x) => `${name(x)}: ${assumedOf(x.l)}`),
       ...(b.openQuestions ?? []).filter(answeredByDefault).map((q) => `question "${text(q.q).slice(0, 60)}": ${text(q.default)} (${text(q.by)})`)],
   };
@@ -86,6 +99,20 @@ export function gaps(b, { packExists = false, fileExists = (p) => fs.existsSync(
   if (!b.car?.id) todo.push({ ask: 'Which car is this for? (the car folder name, e.g. rss_gtm_protech_p92_f6)', set: `car.id` });
   else if (!packExists) todo.push({ ask: `No car pack for ${b.car.id}. Do you have the car's .kn5 file?`, do: `aclivery car prep <path to ${b.car.id}.kn5> --skins <its skins folder>`, blocked: 'everything about panels and renders' });
   if (!b.references?.length && !b.elements?.length) todo.push({ ask: 'What should it look like? Share reference images, or describe the design in a sentence.', add: 'references' });
+  // Every photo the user gave gets looked at and given a view; then the basic views are checked, and a missing one is a question for the user
+  // (a photo of the roof is often the only place a big graphic shows), not something to skip quietly.
+  const refs = b.references ?? [];
+  const unviewed = refs.map((r, i) => ({ r, i })).filter(({ r }) => r.file && !text(r.view));
+  if (unviewed.length) {
+    todo.push({ ask: null, do: `look at every photo and give each a view (left, right, front, rear, top, front-left, front-right, rear-left, rear-right) and a note of what it shows. If you have not made the contact sheets yet: aclivery photos <the user's photo folder> --brief ${b.slug ?? '<slug>'}. Photos without a view: ${unviewed.map(({ i }) => i).join(', ')}`, set: `references.${unviewed[0].i}.view` });
+  } else if (refs.length) {
+    const have = new Set(refs.map((r) => text(r.view))), waived = new Set((b.viewsWaived ?? []).map(String));
+    const slot = VIEW_SLOTS.find((s) => !waived.has(s.id) && !s.views.some((v) => have.has(v)));
+    if (slot) {
+      todo.push({ ask: `I do not see a photo of ${slot.label} among the ones you gave me. Do you have one? If you add it to the folder I will look at it. If not, I will say so in the report and ${slot.consequence}.`,
+        then: `a new photo: aclivery photos <folder> --brief ${b.slug ?? '<slug>'}  |  none exists: aclivery brief set ${b.slug ?? '<slug>'} viewsWaived '${JSON.stringify([...waived, slot.id])}'` });
+    }
+  }
   // Study the references into layers BEFORE planning elements. Subtle tonal art (faint grey detail on a light body) is
   // often what makes a livery recognisable; it must be listed and planned, not skipped for lack of an asset.
   if (b.references?.length && !b.analysis) {
@@ -149,11 +176,11 @@ export function gaps(b, { packExists = false, fileExists = (p) => fs.existsSync(
       else if (!pending && b.build) {
         if (b.build.part) todo.push({ ask: null, do: `the last build was a part (--only ${b.build.part}), which is not a round (rounds done: ${b.build.round ?? 0}). Build the other textures the same way, then run aclivery apply <design> without --only: that full build is round ${(b.build.round ?? 0) + 1}` });
         else if (b.build.missing > 0) todo.push({ ask: null, do: `the last build left ${b.build.missing} layer(s) missing: run aclivery apply <design> --check, fix every "missing:" line (add the element, or record a decision), then build again` });
-        else if ((b.build.round ?? 0) < ROUNDS) todo.push({ ask: null, do: `rounds done: ${b.build.round} of at least ${ROUNDS} (more are fine while the differences are big). Look at compare.png, name the 3 to 5 biggest differences from the references, fix those in the design, apply again` });
+        else if ((b.build.round ?? 0) < ROUNDS) todo.push({ ask: null, do: `rounds done: ${b.build.round} of at least ${ROUNDS} (more are fine while the differences are big). Skills: ac-render and ac-verify. Look at compare.png, name the 3 to 5 biggest differences from the references, fix those in the design, apply again` });
         else if (!b.build.exported) todo.push({ ask: null, do: 'export: aclivery apply <design> --export, then aclivery validate skin <dist folder>/<Name>' });
         else if (!hasReport(b)) {
-          const { placeholders, skipped, assumed } = openNotes(b);
-          todo.push({ ask: null, do: `write the report (what is built; placeholders: ${placeholders.join('; ') || 'none'}; skipped: ${skipped.join('; ') || 'none'}; assumed, not confirmed by the user: ${assumed.join('; ') || 'none'}; and that none of it was verified in the game until the user loads it in Content Manager and says so)`, set: 'report' });
+          const { placeholders, skipped, assumed, decided, waived } = openNotes(b);
+          todo.push({ ask: null, do: `write the report (what is built; placeholders: ${placeholders.join('; ') || 'none'}; skipped: ${skipped.join('; ') || 'none'}; left out by a decision: ${decided.join('; ') || 'none'}; views the user had no photo of: ${waived.join(', ') || 'none'}; assumed, not confirmed by the user: ${assumed.join('; ') || 'none'}; and that none of it was verified in the game until the user loads it in Content Manager and says so)`, set: 'report' });
         }
       }
     }
@@ -210,10 +237,12 @@ export async function run(argv) {
     for (const [i, r] of (b.references ?? []).entries()) console.log(`    ref ${i}. ${r.file ?? '?'}  view: ${r.view ?? '?'}${r.notes ? '  ' + r.notes : ''}`);
     for (const [i, e] of (b.elements ?? []).entries()) console.log(`    ${i}. ${e.what}  ->  ${e.panel ?? e.target ?? '?'}  [${e.status ?? 'idea'}]${e.asset ? '  ' + path.basename(e.asset) : ''}`);
     if (!todo.length && b.build?.exported && hasReport(b)) {
-      const { placeholders, skipped, assumed } = openNotes(b);
+      const { placeholders, skipped, assumed, decided, waived } = openNotes(b);
       console.log(`\nDONE: ${b.build.round} full-build round(s), exported, report written.`);
       console.log(`  placeholders: ${placeholders.join('; ') || 'none'}`);
       console.log(`  skipped: ${skipped.join('; ') || 'none'}`);
+      console.log(`  left out by a decision: ${decided.join('; ') || 'none'}`);
+      console.log(`  views the user had no photo of: ${waived.join(', ') || 'none'}`);
       console.log(`  assumed, not confirmed by the user: ${assumed.join('; ') || 'none'}`);
       console.log(`  report: ${typeof b.report === 'string' ? b.report : JSON.stringify(b.report)}`);
       console.log('  Not verified in the game until the user loads the zip in Content Manager and says so.');
