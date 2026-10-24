@@ -15,6 +15,14 @@ Rules for AI agents working **on this repo** (building the kit). For agents *usi
 - Mark every claim in docs as verified (by us, from a file or a run) or unverified (a write-up, a forum, memory).
   Do not state a game behaviour as fact unless it was tested in the game.
 
+## Design for any livery
+
+- The T. Thiele #71 livery on the RSS P92 is the **test case, not the target**. The kit must adapt to other paint jobs, cars and photo sets.
+  No check, default, prompt or skill may depend on its words (Monster, claw, DELS, Thiele, a panel name). Car-specific facts live in `cars/<id>/` and the brief; livery-specific
+  facts live in the brief and the design file. Tests and the eval harness (`eval/`) may name the test case; `src/` and `skills/` may not.
+- When a gap shows up in the test case (the soft grey feathers), fix it as a general capability (a procedural style, a way to extract or take art from a photo or a file, an honest
+  limit the agent must state), then check it on a second, different livery. A fix that only helps the Thiele car is not done.
+
 ## Open items
 
 - `docs/TODO.md` section 0 holds the **open items register**. Nothing that is still open may live only in the chat or in a memory note.

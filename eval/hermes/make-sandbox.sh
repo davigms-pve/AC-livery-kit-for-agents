@@ -6,6 +6,7 @@
 # Kept: bin/ src/ skills/, README, package files, node_modules, the committed car map, the P92 car pack, logos, stock textures.
 # The user's photos go in <dest>/photos/ (ALL of them, as a real user would hand them over); no brief is made, the agent starts one.
 # Set PRE_BRIEF=1 to also pre-make the brief with 3 photos (the old, narrower set-up of runs 2 to 5).
+# Set EXCLUDE_PHOTO=<part of a file name> to leave a photo out (to test what the agent does when a view is missing).
 # Set NO_PREPPED=1 to leave out assets/logos/prepped (marks cut out by earlier runs), so cutting a mark out is part of the task.
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"; SRC="$(cd "$HERE/../.." && pwd)"
@@ -21,6 +22,7 @@ cp -r "$SRC/assets/logos" "$SRC/assets/stock" "$SRC/assets/cars" "$DEST/assets/"
 [ "${NO_PREPPED:-0}" = 1 ] && rm -rf "$DEST/assets/logos/prepped"
 cp -r "$SRC/.aclivery/cars/$CAR" "$DEST/.aclivery/cars/"
 cp "$PHOTOS"/*.jpg "$DEST/photos/"
+[ -n "${EXCLUDE_PHOTO:-}" ] && rm -f "$DEST"/photos/*"$EXCLUDE_PHOTO"*
 cd "$DEST"
 if [ "${PRE_BRIEF:-0}" = 1 ]; then
   node bin/aclivery.mjs brief init "$SLUG" --title "T. Thiele #71 Monster Energy Ultra" --car "$CAR" >/dev/null
