@@ -26,7 +26,11 @@ What has to exist before a meaningful M1 run (from `docs/TODO.md`):
 
 **Status 2026-10-22:** by the builder's own scoring Haiku reached 29, 33, 34 and 35 of 40 across four runs (runs 3 and 4 above the 32 pass line) and Opus 37; the Opus build was loaded in the game and looks right apart from the door plate card (`docs/TODO.md`, B7). The owner has not yet judged "recognisably the same" for a Haiku skin; the next Haiku runs use the staged flow, which has not been tried with a model.
 
-## M2: Hermes with the local model (parked until M1 passes; the owner is open to trying it on 2026-10-23, ask first)
+## M2: Hermes with the local model
+
+**Status 2026-10-25:** run twice on 2026-10-23 and 2026-10-24 at the owner's request, with Hermes on `role-pool`, which the owner says is Qwen 3.8 27B (not verified by us). Builder's scores: 32 (restricted set-up), 33 (all photos, a simulated user) and 34 (normal mode, one photo missing) of 40, against Haiku's 35 on the same kit (`eval/runs/2026-10-24-hermes.md`, `...-hermes-ask-path.md`). The set-ups differ, so these are not a controlled comparison. Effort: the restricted run took 75 tool calls in 13 minutes (Haiku run 5: 62 in 14); the two conversation runs took 322 calls over about 54 minutes and 228 over 40, which include a real conversation and more photos. In those it worked around the kit more often than Haiku did (hand-written `node -e` probes, reading `src/`).
+
+Original plan, kept for reference:
 
 Narrow tasks first ("put DELS 71 on both plates", "what is on the left door?"), then the full flow. Needs the owner's explicit go-ahead
 to interact with Hermes on this machine. Measure where it breaks; fix the kit, not the prompt.

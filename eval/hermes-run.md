@@ -9,7 +9,7 @@ Status of each fact: **[V]** verified by us on this machine today; **[R]** read 
 
 - **[V]** Hermes Agent v0.21.5 at `C:\Users\davi_\AppData\Local\hermes\` (`hermes` is on the PATH); its config is `config.yaml` there. LM Studio's `lms` is installed but its server is off.
 - **[V]** Hermes is configured with a LiteLLM proxy on the LAN (`http://192.168.100.116:4000`) and model aliases `role-pool`, `role-pool-home`, `role-pool-trial`, `role-pool-moises-trial`; the default model is `role-pool`. The providers listed are `GitHub Copilot`, `Anthropic`, `davipve-local` and `role-pool`.
-- **[?] Which alias is the local Qwen?** The names do not say what runs behind them (a pool can route to a cloud model). A run on the wrong one would not be an M2 run. **The owner must name the provider and model alias to use**, and say whether it can see images.
+- **Which model:** the owner says (2026-10-25) that `role-pool` runs **Qwen 3.8 27B**; we have not verified that (the session store records only the alias). The runs used the default alias, no provider or model flags. Not known: which model answers Hermes's `vision_analyze` calls.
 - **[?]** Whether that model sees images. Reading the reference photos and the render needs vision (`--image` for one attachment, or the `vision` toolset, which may call a different model).
 
 ## Isolation (so the model cannot read an answer key or damage the repo)
