@@ -11,6 +11,8 @@ import { encodeDds } from '../src/engine.mjs';
 
 const bin = path.resolve('bin/aclivery.mjs');
 const run = (args, env = {}) => spawnSync(process.execPath, [bin, ...args], { encoding: 'utf8', env: { ...process.env, ...env } });
+const Q = (answer) => ({ asked: 'Do you have a photo of that?', answer });   // a gate answer quotes the user
+const ALLW = Object.fromEntries(['side', 'front', 'rear', 'top'].map((k) => [k, Q('no, only these')]));
 const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), 'aclivery-test-'));
 
 test('args: flags, booleans and positionals', () => {
@@ -262,7 +264,7 @@ test('decal: refuses to cover art on the same panel unless --overlap; paint is b
 
 test('brief: references without an analysis ask for the analysis; subtle art cannot be dropped silently', async () => {
   const { gaps } = await import('../src/commands/brief.mjs');
-  const b = { car: { id: 'x' }, references: [{ file: 'a.jpg', view: 'left' }], viewsWaived: ['front', 'rear', 'top'], mode: 'batch', baseColour: 'white', elements: [{ what: 'Monster logo', target: 'door', panel: 'p', asset: 'a.png' }] };
+  const b = { car: { id: 'x' }, references: [{ file: 'a.jpg', view: 'left' }], viewsWaived: ALLW, mode: 'batch', baseColour: 'white', elements: [{ what: 'Monster logo', target: 'door', panel: 'p', asset: 'a.png' }] };
   const yes = () => true;
   assert.match(gaps(b, { packExists: true, fileExists: yes })[0].do, /ac-analyze/);
   b.analysis = { layers: [{ kind: 'tonal-art', what: 'grey ink feathers', tone: 'subtle', confidence: 'high', evidence: 'a.jpg left' }] };
@@ -430,7 +432,7 @@ test('apply: a pattern fills the chosen panels only, logos can still sit on it, 
 test('brief: every analysis layer must say how sure it is; doubt becomes a grounded question for the user', async () => {
   const { gaps } = await import('../src/commands/brief.mjs');
   const yes = () => true;
-  const mk = (layers) => ({ slug: 's', car: { id: 'x' }, references: [{ file: 'a.jpg', view: 'left' }], viewsWaived: ['front', 'rear', 'top'], mode: 'batch', baseColour: 'white', elements: [], analysis: { layers } });
+  const mk = (layers) => ({ slug: 's', car: { id: 'x' }, references: [{ file: 'a.jpg', view: 'left' }], viewsWaived: ALLW, mode: 'batch', baseColour: 'white', elements: [], analysis: { layers } });
   const first = (b) => gaps(b, { packExists: true, fileExists: yes })[0];
   // Missing confidence/evidence: the next step names the layers to review.
   assert.match(first(mk([{ kind: 'logo', what: 'three slanted bars' }])).do, /confidence.*evidence.*0 "three slanted bars"/s);
@@ -592,7 +594,7 @@ test('logo prep --erase over a stray corner lets --key-bg key the rest', async (
 test('brief: shows the references and takes the base colour from the analysis', async () => {
   const { gaps, baseColourOf } = await import('../src/commands/brief.mjs');
   const yes = () => true;
-  const b = { slug: 's', car: { id: 'x' }, references: [{ file: 'a.jpg', view: 'left' }], viewsWaived: ['front', 'rear', 'top'], mode: 'batch', elements: [{ what: 'x', panel: 'p', asset: 'a.png' }],
+  const b = { slug: 's', car: { id: 'x' }, references: [{ file: 'a.jpg', view: 'left' }], viewsWaived: ALLW, mode: 'batch', elements: [{ what: 'x', panel: 'p', asset: 'a.png' }],
     analysis: { layers: [{ kind: 'base', what: 'near-white pearl', confidence: 'high', evidence: 'a.jpg' }] } };
   assert.equal(baseColourOf(b), 'near-white pearl');
   assert.ok(!gaps(b, { packExists: true, fileExists: yes }).some((t) => /base colour/.test(t.ask ?? '')));
@@ -692,7 +694,7 @@ test('brief plan: NEXT walks sourcing, fetch assets, the design build, the missi
   const files = new Set(['assets/logos/claw_prepped.png']);
   const fe = (p) => files.has(p);
   const layer = (o) => ({ confidence: 'high', evidence: 'a.jpg left', ...o });
-  const base = () => ({ slug: 'pp', car: { id: 'x' }, references: [{ file: 'a.jpg', view: 'left' }], viewsWaived: ['front', 'rear', 'top'], mode: 'batch', analysis: { layers: [
+  const base = () => ({ slug: 'pp', car: { id: 'x' }, references: [{ file: 'a.jpg', view: 'left' }], viewsWaived: ALLW, mode: 'batch', analysis: { layers: [
     layer({ kind: 'base', what: 'white' }),
     layer({ kind: 'logo', what: 'Monster claw', brand: 'Monster Energy', part: 'symbol', where: 'hood' }),
     layer({ kind: 'tonal-art', what: 'grey leaves', tone: 'subtle' }),
@@ -739,7 +741,7 @@ test('brief: a skipped layer shows its reason and leaves the coverage check; an 
   const pdir = path.join(home, 'projects', 'dn'); fs.mkdirSync(pdir, { recursive: true });
   const layers = [layer({ kind: 'base', what: 'white' }), layer({ kind: 'text', what: 'driver name', source: 'construct' }),
     layer({ kind: 'logo', what: 'Porsche crest', source: 'skip', why: 'no file; the owner has not said yes to a download' }), layer({ kind: 'tonal-art', what: 'grey leaves', source: 'generate' })];
-  fs.writeFileSync(path.join(pdir, 'brief.json'), JSON.stringify({ slug: 'dn', title: 'Done', car: { id: 'dn' }, references: [{ file: 'a.jpg', view: 'left' }], viewsWaived: ['front', 'rear', 'top'], mode: 'batch', analysis: { layers },
+  fs.writeFileSync(path.join(pdir, 'brief.json'), JSON.stringify({ slug: 'dn', title: 'Done', car: { id: 'dn' }, references: [{ file: 'a.jpg', view: 'left' }], viewsWaived: ALLW, mode: 'batch', analysis: { layers },
     build: { round: 3, missing: 0, elements: 1, cutOff: 0, exported: true, design: 'd.json' } }));
   const file = path.join(dir, 'd.json');
   fs.writeFileSync(file, JSON.stringify({ car: 'dn', brief: 'dn', textures: { ext_main: { elements: [{ panel: 'a', text: 'DRIVER NAME', at: [0, 0.5, 0.5, 0.2] }] } } }));
@@ -852,7 +854,7 @@ test('compare: --crop is checked, --each needs a folder, and the pair sheet zoom
 test('brief: a batch run can take a default and write it down; that clears the question and is listed in the report and in DONE', async () => {
   const { gaps, openNotes } = await import('../src/commands/brief.mjs');
   const layer = (o) => ({ confidence: 'high', evidence: 'a.jpg left', ...o });
-  const b = { slug: 'as', car: { id: 'x' }, references: [{ file: 'a.jpg', view: 'left' }], viewsWaived: ['front', 'rear', 'top'], mode: 'batch', analysis: { layers: [
+  const b = { slug: 'as', car: { id: 'x' }, references: [{ file: 'a.jpg', view: 'left' }], viewsWaived: ALLW, mode: 'batch', analysis: { layers: [
     layer({ kind: 'base', what: 'white' }),
     layer({ kind: 'logo', what: 'Porsche crest', brand: 'Porsche', part: 'symbol', confidence: 'medium', source: 'construct' }),
     layer({ kind: 'text', what: 'faint script', confidence: 'low', source: 'skip', why: 'cannot read it' }) ] } };
@@ -909,10 +911,14 @@ test('photos: every photo gets a numbered sheet and is added to the brief once; 
   b.references[1].view = 'front-left';
   let ask = gaps(b, { packExists: true })[0];
   assert.match(ask.ask, /I do not see a photo of the rear/);
-  assert.match(ask.then, /aclivery photos <folder> --brief ph .*viewsWaived '\["rear"\]'/);
-  b.viewsWaived = ['rear'];
+  assert.match(ask.then, /aclivery photos <folder> --brief ph .*viewsWaived\.rear '\{"asked":.*a waiver you decide yourself is not accepted/);
+  b.viewsWaived = ['rear'];   // the old array form, or a waiver the model decides itself, is not a waiver
+  assert.match(gaps(b, { packExists: true })[0].ask, /I do not see a photo of the rear/);
+  b.viewsWaived = { rear: 'no photo' };
+  assert.match(gaps(b, { packExists: true })[0].ask, /I do not see a photo of the rear/);
+  b.viewsWaived = { rear: Q('no, sorry') };   // the user's own words
   assert.match(gaps(b, { packExists: true })[0].ask, /the car from above/);
-  b.references[3].view = 'top'; b.viewsWaived = ['rear'];
+  b.references[3].view = 'top';
   assert.doesNotMatch(gaps(b, { packExists: true })[0].ask ?? '', /I do not see a photo/);   // all slots are covered or waived: on to the analysis
   // a decision tagged with a layer closes its "missing" line (no more dead end)
   const { coverage } = await import('../src/commands/apply.mjs');
@@ -989,7 +995,7 @@ test('modes: normal asks for a plan check-in before building and a first-draft r
   const { gaps, planAsk } = await import('../src/commands/brief.mjs');
   const layer = (o) => ({ confidence: 'high', evidence: 'a.jpg left', ...o });
   const files = new Set(['assets/logos/prepped/monster_claw.png']);
-  const mk = (mode) => ({ slug: 'md', mode, car: { id: 'x' }, references: [{ file: 'a.jpg', view: 'left' }], viewsWaived: ['front', 'rear', 'top'], analysis: { layers: [
+  const mk = (mode) => ({ slug: 'md', mode, car: { id: 'x' }, references: [{ file: 'a.jpg', view: 'left' }], viewsWaived: ALLW, analysis: { layers: [
     layer({ kind: 'base', what: 'white' }),
     layer({ kind: 'logo', what: 'Monster claw', brand: 'Monster Energy', part: 'symbol', source: 'fetch', asset: 'assets/logos/prepped/monster_claw.png' }),
     layer({ kind: 'text', what: 'driver name T. THIELE', source: 'construct' }),
@@ -1005,14 +1011,19 @@ test('modes: normal asks for a plan check-in before building and a first-draft r
   assert.match(ask, /draw myself: driver name T\. THIELE\./);
   assert.match(ask, /rough likeness of .*: grey hand-drawn feathers\./);
   assert.match(ask, /Left out: SC disc \(no file\)\./);
-  assert.equal(first(n).set, 'planApproved');
-  n.planApproved = 'yes, go ahead, leave the disc out';
+  assert.match(first(n).then, /ask the user, then stop and wait\. Only after they answer: aclivery brief set md planApproved '\{"asked"/);
+  n.planApproved = 'yes, go ahead, leave the disc out';   // a bare string is not the user's words: the question stays
+  assert.match(first(n).ask, /Before I start building, here is my plan/);
+  assert.match(first(n).then, /not a quote of the user, so it does not count/);
+  n.planApproved = { asked: 'Here is my plan ... is that OK?', answer: 'yes, go ahead, leave the disc out' };
   assert.match(first(n).do, /build in parts/);
   // after the first full build: show the user the draft before the rounds
   n.build = { round: 1, missing: 0, elements: 5, cutOff: 0, exported: false, out: '/tmp/o' };
   assert.match(first(n).ask, /Here is a first draft\. Please open .*compare\.png/);
-  assert.equal(first(n).set, 'draftReviewed');
-  n.draftReviewed = 'the grey art is too dark';
+  assert.match(first(n).then, /Only after they answer: aclivery brief set md draftReviewed/);
+  n.draftReviewed = 'Round 2 shown to user';   // the false note found in the ask-path run: not a quote, so it does not count
+  assert.match(first(n).ask, /Here is a first draft/);
+  n.draftReviewed = { asked: 'What looks wrong or missing?', answer: 'the grey art is too dark' };
   assert.match(first(n).do, /rounds done: 1 of at least 3/);
   // batch: neither question, and the report must carry the questions it would have asked
   const bt = mk('batch');
@@ -1020,4 +1031,24 @@ test('modes: normal asks for a plan check-in before building and a first-draft r
   bt.build = { round: 3, missing: 0, elements: 5, cutOff: 0, exported: true };
   assert.match(first(bt).do, /the short list of questions you would have asked the user, each with the default you took/);
   assert.match(planAsk(bt), /Stand-ins or missing files: none\./);
+});
+
+test('DONE prints what the user actually said at the plan, the draft and the waived views', async () => {
+  const home = tmp(); applyCar(home, 'qd');
+  const pdir = path.join(home, 'projects', 'qd'); fs.mkdirSync(pdir, { recursive: true });
+  const layer = (o) => ({ confidence: 'high', evidence: 'a.jpg left', ...o });
+  fs.writeFileSync(path.join(pdir, 'brief.json'), JSON.stringify({ slug: 'qd', title: 'Q', car: { id: 'qd' }, mode: 'normal', references: [{ file: 'a.jpg', view: 'left' }],
+    viewsWaived: { front: Q('no, sorry, only the side'), rear: Q('none'), top: { asked: 'ok', answer: '' } },   // the last one has no answer: not a waiver
+    planApproved: { asked: 'Here is my plan, is that OK?', answer: 'yes, leave the disc out' }, draftReviewed: { asked: 'What looks wrong?', answer: 'the doors need the claw' },
+    analysis: { layers: [layer({ kind: 'base', what: 'white' }), layer({ kind: 'text', what: 'name', source: 'construct' })] },
+    build: { round: 3, missing: 0, elements: 1, cutOff: 0, exported: true, design: 'd.json' }, report: 'done' }));
+  const env = { ACLIVERY_HOME: home };
+  assert.match(run(['brief', 'show', 'qd'], env).stdout, /I do not see a photo of the car from above/);   // top: the empty answer is not a waiver
+  const b = JSON.parse(fs.readFileSync(path.join(pdir, 'brief.json'), 'utf8')); b.viewsWaived.top = Q('no photo from above');
+  fs.writeFileSync(path.join(pdir, 'brief.json'), JSON.stringify(b));
+  const done = run(['brief', 'show', 'qd'], env).stdout;
+  assert.match(done, /DONE:/);
+  assert.match(done, /views the user had no photo of: front \(asked "Do you have a photo of that\?" -> "no, sorry, only the side"\); rear .*; top /);
+  assert.match(done, /plan check-in: asked "Here is my plan, is that OK\?" -> "yes, leave the disc out"/);
+  assert.match(done, /first draft review: asked "What looks wrong\?" -> "the doors need the claw"/);
 });

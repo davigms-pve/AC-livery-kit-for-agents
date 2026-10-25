@@ -34,6 +34,8 @@ aclivery car notes <car>                          what is already known about th
 3. Loop: `aclivery brief show <slug>`. If it says **NEXT (ask the user)**, ask exactly that. If it says **do:**, run that command.
    `brief show` checks the basics for you: every photo has a view, and there is a flat side, the front, the rear and a view from above.
    A missing one is a question for the user ("I do not see the car from above. Do you have a photo?"), not something to skip.
+   **The three check-ins (views, plan, first draft) only count when they carry the user's own words** (`{"asked","answer"}`); a bare string is refused,
+   and `brief show` prints the quotes in DONE. Never write what the user has not said. If you have not asked yet: ask, then stop and wait.
 4. **Ask the user when**: a part of the car or a logo you cannot find in any photo, or can find but are not sure what it is;
    text you cannot read; two photos disagree; a logo has no file in `assets/logos` (ask if they have it, or whether you may look for
    it; name the exact page and wait for the yes, see `ac-logos`); you would otherwise guess. Do not ask what the photos already show.
@@ -44,15 +46,16 @@ aclivery car notes <car>                          what is already known about th
    Never ask them to run commands or choose technical settings.
 6. **Two check-ins in normal mode, both asked by `brief show`.** The **plan**, before you build: say in a few plain sentences what you found, which
    marks you have files for, what you will draw yourself, what you can only make a rough likeness of (the kit draws line patterns, it cannot copy
-   hand-drawn soft art), what you will leave out or stand in for. Wait for their answer, then `brief set <slug> planApproved "<their words>"`.
+   hand-drawn soft art), what you will leave out or stand in for. **Then stop and wait for their answer** (end your message with the question; do not go on). Only after they have answered,
+   `brief set <slug> planApproved '{"asked":"<the plan as you told them>","answer":"<their own words>"}'`.
    The **first draft**, after the first full build: show them the images (`compare.png`, `sheet.png`), not just the paths, ask what looks wrong or
-   missing in their words, then `brief set <slug> draftReviewed "<their words>"` and turn each point into a change. After that, build and check on
+   missing in their words, stop and wait, then `brief set <slug> draftReviewed '{"asked":"...","answer":"<their own words>"}'` and turn each point into a change. After that, build and check on
    your own; interrupt only for what you cannot resolve (a taste call, missing information, a trade-off that is theirs).
 7. Record every answer with the `set` or `add` line `brief show` prints, and every real decision with `brief add ... decisions`.
    The brief is your memory; you can lose your context and `brief show` restores it.
 8. **Batch, or if you truly cannot ask** (an automatic run with nobody to answer): `aclivery brief set <slug> mode batch`, take the default, add it to `decisions`, mark the layer
    `"assumed": "default: user not asked, <why>"` (see `ac-analyze`), and tell the user at the end what you assumed, and put the questions you would have asked, each with its default, in the report. If a view
-   is missing and nobody can say, record it: `aclivery brief set <slug> viewsWaived '["top"]'`.
+   is missing and nobody can say, record it: `aclivery brief set <slug> viewsWaived.top '{"asked":"<what you wrote>","answer":"<what the batch had instead>"}'` (in a batch run use asked "not asked (batch run)" and answer "assumed: no photo of it", and it shows as such).
 9. If something is missing on the machine (no car model file, for example), offer the fallback from `docs/user-journey.md`
    ("when something is missing") and say plainly what degrades.
 10. Ask before any download or anything that leaves the machine (`ac-logos` has the rule).

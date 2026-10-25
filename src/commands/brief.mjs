@@ -18,9 +18,9 @@ aclivery brief list                                     all projects
   "overlapRules":"which things must not cover each other","feel":"what makes it recognisable"} (see skill ac-analyze).
   Every layer needs confidence and evidence; low confidence (or a brand read by shape only) becomes a question for the user.
   Photos: aclivery photos <folder> --brief <slug> adds every photo; give each a view. If the user has no photo of a basic view (side, front, rear, top):
-  aclivery brief set <slug> viewsWaived '["top"]'.
+  aclivery brief set <slug> viewsWaived.top '{"asked":"...","answer":"<their words>"}'.
   How involved the user wants to be: "mode": "normal" (check in a few times: ask early, show a plan, show a first draft) or "batch" (do everything, ask at the end).
-  aclivery brief set <slug> mode normal|batch. In normal mode brief show asks for planApproved (after the plan) and draftReviewed (after the first draft).
+  aclivery brief set <slug> mode normal|batch. In normal mode brief show asks for planApproved (after the plan) and draftReviewed (after the first draft). These three gates only count as {"asked","answer"}: the user's own words; a bare string does not.
   When the user cannot be asked (a batch run), take the default and write it down: layer "assumed": "default: user not asked, <why>"
   (stops the question, shows in the report and in DONE); an open question stored as {"q":"...","default":"...","by":"..."} does the same.
   Then every layer needs a "source": fetch (a brand mark that exists as a file; set "asset" to the prepared file), generate (livery art with no file: a pattern),
@@ -96,7 +96,14 @@ export function planAsk(b) {
   return `Before I start building, here is my plan, for you to check in your own words. Marks and logos I have files for: ${listOf(live.filter(has).map((l) => short(l.what)))}. Text, numbers, plates and colours I will draw myself: ${listOf(made)}. Art I can only make a rough likeness of (the kit draws line patterns, not hand-drawn soft art): ${listOf(rough)}. Stand-ins or missing files: ${listOf(stand)}. Left out: ${listOf(left)}. Is that OK, or do you want to change something? Tell the user this in a few plain sentences, not as a list of layer numbers.`;
 }
 
+/** A gate answer must quote the user: {"asked": "<what you asked, as you put it>", "answer": "<their own words>"}. A bare string, an array or a flag does not count. */
+export const quoted = (v) => !!v && typeof v === 'object' && !Array.isArray(v) && text(v.asked).length >= 5 && text(v.answer).length >= 2;
+const quote = (v) => `asked "${short(v.asked, 110)}" -> "${short(v.answer, 110)}"`;
+const QUOTE_FORM = '{"asked":"<the question as you put it to the user>","answer":"<their own words>"}';
 const hasReport = (b) => typeof b.report === 'string' ? b.report.trim() !== '' : !!b.report && Object.keys(b.report).length > 0;
+
+/** The waivers that quote the user (viewsWaived.<slot>: {asked, answer}); anything else is not a waiver. */
+const waivedOf = (b) => Object.fromEntries(Object.entries(b.viewsWaived && typeof b.viewsWaived === 'object' && !Array.isArray(b.viewsWaived) ? b.viewsWaived : {}).filter(([, q]) => quoted(q)));
 
 /** What the final report must name: layers drawn from placeholder art, and layers left out (with the reason given). */
 export function openNotes(b) {
@@ -106,7 +113,9 @@ export function openNotes(b) {
     placeholders: live.filter(({ l }) => l.source === 'generate' || /placeholder/i.test(String(l.asset ?? ''))).map((x) => `${name(x)} (${x.l.source === 'generate' ? 'generated pattern' : 'placeholder file'})`),
     skipped: live.filter(({ l }) => l.source === 'skip').map((x) => `${name(x)}: ${String(x.l.why ?? '').trim() || 'no reason given'}`),
     decided: (b.decisions ?? []).filter((d) => decidedLayer(d) !== null).map((d) => `L${decidedLayer(d)}: ${text(d.a ?? d.answer ?? d.why)}${text(d.by) ? ` (${text(d.by)})` : ''}`),
-    waived: (b.viewsWaived ?? []).map(String),
+    waived: Object.entries(waivedOf(b)).map(([id, q]) => `${id} (${quote(q)})`),
+    plan: quoted(b.planApproved) ? quote(b.planApproved) : null,
+    draft: quoted(b.draftReviewed) ? quote(b.draftReviewed) : null,
     assumed: [...live.filter(({ l }) => assumedOf(l)).map((x) => `${name(x)}: ${assumedOf(x.l)}`),
       ...(b.openQuestions ?? []).filter(answeredByDefault).map((q) => `question "${text(q.q).slice(0, 60)}": ${text(q.default)} (${text(q.by)})`)],
   };
@@ -125,11 +134,11 @@ export function gaps(b, { packExists = false, fileExists = (p) => fs.existsSync(
   if (unviewed.length) {
     todo.push({ ask: null, do: `look at every photo and give each a view: one of ${VIEWS.join(', ')} (detail = a close-up of one part: say which in the notes), and a note of what it shows. If you have not made the contact sheets yet: aclivery photos <the user's photo folder> --brief ${b.slug ?? '<slug>'}. Photos without a valid view: ${unviewed.map(({ r, i }) => (text(r.view) ? `${i} ("${text(r.view)}" is not a view name)` : i)).join(', ')}`, set: `references.${unviewed[0].i}.view` });
   } else if (refs.length) {
-    const have = new Set(refs.map(viewOf)), waived = new Set((b.viewsWaived ?? []).map(String));
+    const have = new Set(refs.map(viewOf)), waived = new Set(Object.keys(waivedOf(b)));
     const slot = VIEW_SLOTS.find((s) => !waived.has(s.id) && !s.views.some((v) => have.has(v)));
     if (slot) {
       todo.push({ ask: `I do not see a photo of ${slot.label} among the ones you gave me. Do you have one? If you add it to the folder I will look at it. If not, I will say so in the report and ${slot.consequence}.`,
-        then: `a new photo: aclivery photos <folder> --brief ${b.slug ?? '<slug>'}  |  none exists: aclivery brief set ${b.slug ?? '<slug>'} viewsWaived '${JSON.stringify([...waived, slot.id])}'` });
+        then: `a new photo: aclivery photos <folder> --brief ${b.slug ?? '<slug>'}  |  they have none: aclivery brief set ${b.slug ?? '<slug>'} viewsWaived.${slot.id} '${QUOTE_FORM}' (their words; a waiver you decide yourself is not accepted)` });
     }
   }
   // Study the references into layers BEFORE planning elements. Subtle tonal art (faint grey detail on a light body) is
@@ -191,12 +200,12 @@ export function gaps(b, { packExists = false, fileExists = (p) => fs.existsSync(
         }
       }
       const pending = todo.some((t) => /to FETCH|marked skip/.test(t.do ?? ''));
-      if (!pending && !b.build && b.mode !== 'batch' && !text(b.planApproved)) todo.push({ ask: planAsk(b), set: 'planApproved', then: 'record what the user said (their words). If they want something changed, change the layers or sources first' });
+      if (!pending && !b.build && b.mode !== 'batch' && !quoted(b.planApproved)) todo.push({ ask: planAsk(b), then: `ask the user, then stop and wait. Only after they answer: aclivery brief set ${b.slug ?? '<slug>'} planApproved '${QUOTE_FORM}'. ${text(b.planApproved) ? 'What is recorded now is not a quote of the user, so it does not count. ' : ''}If they want something changed, change the layers or sources first` });
       else if (!pending && !b.build) todo.push({ ask: null, do: `build in parts: write the design file (one element per layer; set "brief": "${b.slug ?? '<slug>'}"; give each element "covers": "<layer word>"), then aclivery apply <design.json> --check, then apply. Part 1: the body texture (aclivery apply ... --only ext_main), then the other textures (plates, banner, glass, grille).` });
       else if (!pending && b.build) {
         if (b.build.part) todo.push({ ask: null, do: `the last build was a part (--only ${b.build.part}), which is not a round (rounds done: ${b.build.round ?? 0}). Build the other textures the same way, then run aclivery apply <design> without --only: that full build is round ${(b.build.round ?? 0) + 1}` });
         else if (b.build.missing > 0) todo.push({ ask: null, do: `the last build left ${b.build.missing} layer(s) missing: run aclivery apply <design> --check, fix every "missing:" line (add the element, or record a decision), then build again` });
-        else if (b.mode !== 'batch' && (b.build.round ?? 0) >= 1 && !text(b.draftReviewed)) todo.push({ ask: `Here is a first draft. Please open ${b.build.out ? path.join(b.build.out, 'compare.png') : 'compare.png'} (the photo on the left, ours on the right) and ${b.build.out ? path.join(b.build.out, 'sheet.png') : 'sheet.png'}, and tell me what looks wrong or missing, in your own words. I will fix what you point at before I polish it. (Show the user the images, do not just give a path.)`, set: 'draftReviewed', then: 'record what the user said, then turn each point into a change in the design file' });
+        else if (b.mode !== 'batch' && (b.build.round ?? 0) >= 1 && !quoted(b.draftReviewed)) todo.push({ ask: `Here is a first draft. Please open ${b.build.out ? path.join(b.build.out, 'compare.png') : 'compare.png'} (the photo on the left, ours on the right) and ${b.build.out ? path.join(b.build.out, 'sheet.png') : 'sheet.png'}, and tell me what looks wrong or missing, in your own words. I will fix what you point at before I polish it. (Show the user the images, do not just give a path.)`, then: `ask the user, then stop and wait. Only after they answer: aclivery brief set ${b.slug ?? '<slug>'} draftReviewed '${QUOTE_FORM}'. ${text(b.draftReviewed) ? 'What is recorded now is not a quote of the user, so it does not count. ' : ''}Then turn each point into a change in the design file` });
         else if ((b.build.round ?? 0) < ROUNDS) todo.push({ ask: null, do: `rounds done: ${b.build.round} of at least ${ROUNDS} (more are fine while the differences are big). Skills: ac-render and ac-verify. Look at compare.png, name the 3 to 5 biggest differences from the references, fix those in the design, apply again` });
         else if (!b.build.exported) todo.push({ ask: null, do: 'export: aclivery apply <design> --export, then aclivery validate skin <dist folder>/<Name>' });
         else if (!hasReport(b)) {
@@ -258,12 +267,14 @@ export async function run(argv) {
     for (const [i, r] of (b.references ?? []).entries()) console.log(`    ref ${i}. ${r.file ?? '?'}  view: ${r.view ?? '?'}${r.notes ? '  ' + r.notes : ''}`);
     for (const [i, e] of (b.elements ?? []).entries()) console.log(`    ${i}. ${e.what}  ->  ${e.panel ?? e.target ?? '?'}  [${e.status ?? 'idea'}]${e.asset ? '  ' + path.basename(e.asset) : ''}`);
     if (!todo.length && b.build?.exported && hasReport(b)) {
-      const { placeholders, skipped, assumed, decided, waived } = openNotes(b);
+      const { placeholders, skipped, assumed, decided, waived, plan, draft } = openNotes(b);
       console.log(`\nDONE: ${b.build.round} full-build round(s), exported, report written.`);
       console.log(`  placeholders: ${placeholders.join('; ') || 'none'}`);
       console.log(`  skipped: ${skipped.join('; ') || 'none'}`);
       console.log(`  left out by a decision: ${decided.join('; ') || 'none'}`);
-      console.log(`  views the user had no photo of: ${waived.join(', ') || 'none'}`);
+      console.log(`  views the user had no photo of: ${waived.join('; ') || 'none'}`);
+      if (plan) console.log(`  plan check-in: ${plan}`);
+      if (draft) console.log(`  first draft review: ${draft}`);
       console.log(`  assumed, not confirmed by the user: ${assumed.join('; ') || 'none'}`);
       console.log(`  mode: ${b.mode ?? 'normal'}${b.mode === 'batch' ? ' (no check-ins: the questions are in the report)' : ''}`);
       console.log(`  report: ${typeof b.report === 'string' ? b.report : JSON.stringify(b.report)}`);
