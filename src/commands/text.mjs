@@ -5,7 +5,7 @@ import sharp from 'sharp';
 import { parseArgs, UsageError } from '../lib/args.mjs';
 import { run as decal } from './decal.mjs';
 
-export const help = `aclivery text <car> --panel <name> --text "T. THIELE" --out <texture.png>
+export const help = `aclivery text <car> --panel <name> --text "A. DRIVER" --out <texture.png>
               [--ink #111111] [--font "Verdana, Arial, sans-serif"] [--bold] [--italic] [--spacing 0]
               [--outline #RRGGBB] [--texture role] [--base file | --fill #RRGGBB] [--at x,y,w,h] [--rotate deg]
   Draws the text, then places it on the panel exactly like "aclivery decal" (upright, fitted in the --at box, aspect kept).

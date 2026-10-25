@@ -31,7 +31,7 @@ The brief is your only memory. After EVERY step run `aclivery brief show <slug>`
 ## Rules
 
 - left/right are the car's own sides, as in the game. In the texture atlas the car's right side is the TOP strip.
-- A skin can override several textures (body `EXT_Main`, door plates, decals ...). The body is the default;
+- A skin can override several textures (the body texture, door plates, decals ...). The body is the default;
   pass `--texture <role>` for others (`aclivery panel textures <id>` lists them).
 - Logos never overlap each other unless a reference or the user shows it. `decal`/`text` refuse to cover placed art;
   `--overlap` is only for a real exception (text on its plate card). The quiet tonal art is the lowest layer; with no original file, use a `pattern` element (skill `ac-apply`) as the placeholder.

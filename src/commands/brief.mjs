@@ -2,18 +2,19 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { parseArgs, UsageError } from '../lib/args.mjs';
 import { home, packDir } from '../lib/paths.mjs';
+import { STYLES } from '../lib/patterns.mjs';
 
 export const help = `aclivery brief init <slug> [--title "..."] [--car <id>] [--mode normal|batch]   start a project (the livery you are making)
 aclivery brief show <slug>                              what is decided, what is missing, and THE next step
-aclivery brief set <slug> <path> <value>                e.g. driver.name "T. Thiele"   car.id rss_gtm_protech_p92_f6
+aclivery brief set <slug> <path> <value>                e.g. driver.name "A. Driver"   car.id <car folder name>
 aclivery brief add <slug> <list> '<json>'               lists: elements, references, decisions, openQuestions
 aclivery brief list                                     all projects
   The brief is the memory of the conversation: decisions and open questions live here, not in your context.
   Stored in .aclivery/projects/<slug>/brief.json. Paths like elements.0.panel work; values are read as JSON when they parse.
-  An element is one thing the livery needs: {"what":"Monster logo","target":"both rear quarters","panel":"left_rear",
-  "asset":"assets/logos/monster.png","kind":"logo|text|plate|accent|tonal-art|large-graphic","tone":"subtle|bold",
+  An element is one thing the livery needs: {"what":"sponsor logo","target":"both rear quarters","panel":"<panel>",
+  "asset":"assets/logos/<name>.png","kind":"logo|text|plate|accent|tonal-art|large-graphic","tone":"subtle|bold",
   "status":"idea|asset-ready|placed|checked"}.
-  analysis: {"summary":"...","layers":[{"kind":"logo","what":"Monster claw","brand":"Monster Energy","part":"symbol","where":"doors, hood",
+  analysis: {"summary":"...","layers":[{"kind":"logo","what":"Acme symbol","brand":"Acme","part":"symbol","where":"doors, hood",
   "tone":"bold","confidence":"high|medium|low","evidence":"which reference photo and view shows it"}],
   "overlapRules":"which things must not cover each other","feel":"what makes it recognisable"} (see skill ac-analyze).
   Every layer needs confidence and evidence; low confidence (or a brand read by shape only) becomes a question for the user.
@@ -90,10 +91,10 @@ export function planAsk(b) {
   const live = (b.analysis?.layers ?? []).filter((l) => l.kind !== 'base');
   const has = (l) => l.source === 'fetch' && text(l.asset) && !/placeholder/i.test(String(l.asset));
   const made = live.filter((l) => ['construct', 'stock'].includes(l.source)).map((l) => short(l.what));
-  const rough = live.filter((l) => l.source === 'generate').map((l) => short(l.what));
+  const rough = live.filter((l) => l.source === 'generate').map((l) => `${short(l.what)}${l.style === 'none' ? ' (no style fits: I need your art file, or I leave it out)' : l.style ? ` (${l.style})` : ''}`);
   const stand = live.filter((l) => l.source === 'fetch' && !has(l)).map((l) => short(l.what));
   const left = live.filter((l) => l.source === 'skip').map((l) => `${short(l.what, 32)} (${short(l.why, 40)})`);
-  return `Before I start building, here is my plan, for you to check in your own words. Marks and logos I have files for: ${listOf(live.filter(has).map((l) => short(l.what)))}. Text, numbers, plates and colours I will draw myself: ${listOf(made)}. Art I can only make a rough likeness of (the kit draws line patterns, not hand-drawn soft art): ${listOf(rough)}. Stand-ins or missing files: ${listOf(stand)}. Left out: ${listOf(left)}. Is that OK, or do you want to change something? Tell the user this in a few plain sentences, not as a list of layer numbers.`;
+  return `Before I start building, here is my plan, for you to check in your own words. Marks and logos I have files for: ${listOf(live.filter(has).map((l) => short(l.what)))}. Text, numbers, plates and colours I will draw myself: ${listOf(made)}. Art I can only make a rough likeness of (the kit makes procedural patterns such as plumes, vines, cracks, camouflage, stripes and dots, never a copy of hand-drawn art; your own art file replaces them): ${listOf(rough)}. Stand-ins or missing files: ${listOf(stand)}. Left out: ${listOf(left)}. Is that OK, or do you want to change something? Tell the user this in a few plain sentences, not as a list of layer numbers.`;
 }
 
 /** A gate answer must quote the user: {"asked": "<what you asked, as you put it>", "answer": "<their own words>"}. A bare string, an array or a flag does not count. */
@@ -123,7 +124,7 @@ export function openNotes(b) {
 
 export function gaps(b, { packExists = false, fileExists = (p) => fs.existsSync(p) } = {}) {
   const todo = [];
-  if (!b.car?.id) todo.push({ ask: 'Which car is this for? (the car folder name, e.g. rss_gtm_protech_p92_f6)', set: `car.id` });
+  if (!b.car?.id) todo.push({ ask: 'Which car is this for? (the car folder name in the kit, as `aclivery status` lists it)', set: `car.id` });
   else if (!packExists) todo.push({ ask: `No car pack for ${b.car.id}. Do you have the car's .kn5 file?`, do: `aclivery car prep <path to ${b.car.id}.kn5> --skins <its skins folder>`, blocked: 'everything about panels and renders' });
   if (!['normal', 'batch'].includes(b.mode)) todo.push({ ask: 'How involved do you want to be? I can check in with you a few times (a plan before I build, a first draft to look at), or do everything and ask you at the end. Which do you prefer? (If you do not mind, I will check in.)', set: 'mode', then: `answer normal or batch. If nobody can be asked (an automatic run): aclivery brief set ${b.slug ?? '<slug>'} mode batch` });
   if (!b.references?.length && !b.elements?.length) todo.push({ ask: 'What should it look like? Share reference images, or describe the design in a sentence.', add: 'references' });
@@ -199,7 +200,11 @@ export function gaps(b, { packExists = false, fileExists = (p) => fs.existsSync(
           todo.push({ ask: null, do: `layer ${i} "${l.what}" is a brand mark to FETCH, not redraw. 1) look in assets/logos (aclivery logo inspect <file>) for the brand's file; 2) cut the mark out of it (logo prep --crop --erase --key-bg or --key-light --tint --trim, skill ac-logos); 3) set analysis.layers.${i}.asset to the prepared file. If no file exists, ask the user which source to download from (name URL, host, type) and wait for the yes. A placeholder is only allowed when the user says so: then record it as analysis.layers.${i}.placeholder "<who allowed it and why>" and add a decision. The search procedure is at the top of skill ac-logos.`, set: `analysis.layers.${i}.asset` });
         }
       }
-      const pending = todo.some((t) => /to FETCH|marked skip/.test(t.do ?? ''));
+      for (const { l, i } of live) {
+        if (l.source === 'generate' && !text(l.style)) todo.push({ ask: null, do: `layer ${i} "${short(l.what)}" is generated art: set its style to what it looks like in the photos, one of ${Object.keys(STYLES).join(', ')}, or none when no style fits (then the plan tells the user and asks for an art file or to leave it out)`, set: `analysis.layers.${i}.style` });
+        else if (l.source === 'generate' && text(l.style) !== 'none' && !STYLES[text(l.style)]) todo.push({ ask: null, do: `layer ${i} has style "${l.style}", which is not one of ${Object.keys(STYLES).join(', ')}, none`, set: `analysis.layers.${i}.style` });
+      }
+      const pending = todo.some((t) => /to FETCH|marked skip|is generated art: set its style|has style/.test(t.do ?? ''));
       if (!pending && !b.build && b.mode !== 'batch' && !quoted(b.planApproved)) todo.push({ ask: planAsk(b), then: `ask the user, then stop and wait. Only after they answer: aclivery brief set ${b.slug ?? '<slug>'} planApproved '${QUOTE_FORM}'. ${text(b.planApproved) ? 'What is recorded now is not a quote of the user, so it does not count. ' : ''}If they want something changed, change the layers or sources first` });
       else if (!pending && !b.build) todo.push({ ask: null, do: `build in parts: write the design file (one element per layer; set "brief": "${b.slug ?? '<slug>'}"; give each element "covers": "<layer word>"), then aclivery apply <design.json> --check, then apply. Part 1: the body texture (aclivery apply ... --only ext_main), then the other textures (plates, banner, glass, grille).` });
       else if (!pending && b.build) {

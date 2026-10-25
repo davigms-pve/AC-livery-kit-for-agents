@@ -14,7 +14,7 @@ export const help = `aclivery car prep <car.kn5> [--car-id id] [--skins dir] [--
 aclivery car info <car-id>      what a prepared pack contains
 aclivery car notes <car-id>     facts we already know about this car (panels, textures, pitfalls): read before starting
 aclivery car size <car-id> <texture-role> <WxH>   record a texture's real size when the model only has a low-res copy
-  (e.g. door_plates 2048x640 from the modder's PSD). Panels are UV fractions, so this only fixes the canvas aspect ratio.
+  (e.g. a small texture's real size from the modder's template). Panels are UV fractions, so this only fixes the canvas aspect ratio.
 aclivery car stock <car-id> <texture-role> [--out file.dds] [--force]   save the car's own copy of a texture (default assets/stock/<file>.dds), to use as a design's "base"
   (it keeps the stock tint, stickers and cut-outs). Reads the model once; the file is the modder's work, so it stays local and is never committed.
   An existing file is never overwritten without --force (it may be a better copy, for example the modder's full-size template).`;
@@ -27,7 +27,7 @@ export async function run(argv) {
   if (sub === 'info') return info(target, flags);
   if (sub === 'notes') {
     const f = path.join(root, 'cars', target ?? '', 'notes.md');
-    if (!target || !fs.existsSync(f)) { console.log(`no notes for ${target ?? '<car>'} yet. Write cars/<id>/notes.md as you learn the car (see cars/rss_gtm_protech_p92_f6/notes.md).`); return 0; }
+    if (!target || !fs.existsSync(f)) { console.log(`no notes for ${target ?? '<car>'} yet. Write cars/<id>/notes.md as you learn the car (see cars/<id>/notes.md of a car that has one).`); return 0; }
     console.log(fs.readFileSync(f, 'utf8')); return 0;
   }
   if (sub === 'size') return setSize(target, positional[2], positional[3]);
@@ -56,7 +56,7 @@ export async function run(argv) {
   if (r.status !== 0 || !fs.existsSync(produced)) throw new Error(`liverykit failed to build a profile:\n${r.stdout}\n${r.stderr}`);
   const profile = JSON.parse(fs.readFileSync(produced, 'utf8'));
   // Textures liverykit measured no panels on (door plates, decal sheets) get a synthesized panel from where the model
-  // really samples them, so "decal --texture door_plates --panel whole" works.
+  // really samples them, so "decal --texture <small texture> --panel whole" works.
   // Keep sizes the user recorded with "car size": re-running prep must not forget them.
   const oldFile = path.join(dir, 'profile.json');
   if (fs.existsSync(oldFile)) {

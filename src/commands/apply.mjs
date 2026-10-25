@@ -14,7 +14,7 @@ import { run as compare } from './compare.mjs';
 import { run as exportSkin } from './export.mjs';
 import { decodeTexture } from '../engine.mjs';
 import { decidedLayer, ROUNDS } from './brief.mjs';
-import { PATTERNS, TONAL, DEFAULTS, DEFAULT_DENSITY, DISCREET, makePattern, renderPattern, luma } from '../lib/patterns.mjs';
+import { PATTERNS, TONAL, STYLES, LIKENESS, DEFAULTS, DEFAULT_DENSITY, DISCREET, makePattern, renderPattern, luma } from '../lib/patterns.mjs';
 
 export const help = `aclivery apply <design.json> [--out dir] [--only role,...] [--check] [--no-render] [--export]
   Builds the whole skin from one design file: prepares the assets, draws every element in layer order, renders a
@@ -46,9 +46,9 @@ export const help = `aclivery apply <design.json> [--out dir] [--only role,...] 
   "paint" (solid colours, the default for color), "logo" (the default for image), "text" (the default for text).
   Patterns (placeholders when there is no original art): quiet tonal art "ink-lines" (faint vines and feathers), "leaves"
   (soft grey leaf clusters, like the can's scrollwork), "cracks" (fine branching lines); bold colour "splatter", "brush". "panels" is a list of panel names or "visible" (every well-seen panel); optional "color",
-  "opacity", "density" 0..1, "seed" (same seed, same art). They never block logos. --check warns if tonal patterns would not be discreet.
+  "opacity", "density" 0..1, "seed" (same seed, same art), "angle" 0..180 (stripes, dots). Patterns: ${PATTERNS.join(', ')}. They never block logos. --check warns if tonal patterns would not be discreet.
   A texture "base" (a .png or .dds, instead of "fill") is the starting picture: use it for textures that already hold stickers the car
-  uses (HR_Generic on the P92 holds the N/E/arrow markings next to the windshield banner), so only your parts change.
+  uses (a shared texture may hold stock markings next to your art), so only your parts change.
   A texture "fill" is the starting colour ("transparent" for cut-out textures like door plates, exported as DXT5);
   "size" records the texture's real size in the car pack (same as aclivery car size).`;
 
@@ -57,7 +57,7 @@ const TOP = ['car', 'name', 'brief', 'colors', 'assets', 'textures', 'skin'];
 const ASSET = ['file', 'prep'], PREP = ['crop', 'erase', 'keyBg', 'keyLight', 'tint', 'grey', 'flip', 'trim', 'size'];
 const TEXTURE = ['fill', 'base', 'size', 'elements'];
 const TEXT_OPTS = ['ink', 'font', 'bold', 'italic', 'spacing', 'outline'];
-const ELEMENT = ['panel', 'panels', 'pattern', 'density', 'seed', 'image', 'color', 'text', 'at', 'opacity', 'rotate', 'overlap', 'label', 'layer', 'covers', 'lines', ...TEXT_OPTS];
+const ELEMENT = ['panel', 'panels', 'pattern', 'density', 'seed', 'angle', 'image', 'color', 'text', 'at', 'opacity', 'rotate', 'overlap', 'label', 'layer', 'covers', 'lines', ...TEXT_OPTS];
 const LINE = ['text', 'at', ...TEXT_OPTS];
 const HEX = /^#[0-9a-f]{6}$/i;
 
@@ -179,12 +179,13 @@ export function validateDesign(d, profile, fileExists = (p) => fs.existsSync(p))
         for (const n of names) if (!profile.panels?.[role]?.[n]?.metresPerUv) bad.push(`${where}: panel "${n}" has no measured size in ${role}, so a pattern cannot be scaled to it (aclivery panel list <car> --texture ${role})`);
         if (e.color !== undefined && !colourOk(e.color)) bad.push(`${where}.color: not a hex colour or a name in "colors"`);
         if (e.density !== undefined && !(typeof e.density === 'number' && e.density > 0 && e.density <= 1)) bad.push(`${where}.density: above 0, up to 1`);
+        if (e.angle !== undefined && !(typeof e.angle === 'number' && e.angle >= 0 && e.angle <= 180)) bad.push(`${where}.angle: 0 to 180 degrees (stripes and dots)`);
         if (e.seed !== undefined && !Number.isInteger(e.seed)) bad.push(`${where}.seed: a whole number`);
         if (e.opacity !== undefined && !(typeof e.opacity === 'number' && e.opacity >= 0 && e.opacity <= 1)) bad.push(`${where}.opacity: 0..1`);
         if (e.layer !== undefined && !LAYERS.includes(e.layer)) bad.push(`${where}.layer: one of ${LAYERS.join(', ')}`);
         return;
       }
-      for (const k of ['panels', 'density', 'seed']) if (e[k] !== undefined) bad.push(`${where}.${k}: only on pattern elements`);
+      for (const k of ['panels', 'density', 'seed', 'angle']) if (e[k] !== undefined) bad.push(`${where}.${k}: only on pattern elements`);
       const kinds = ['image', 'color', 'text'].filter((k) => e[k] !== undefined);
       if (kinds.length !== 1) bad.push(`${where}: give exactly one of image / color / text (found ${kinds.join(', ') || 'none'})`);
       if (!e.panel || !profile.panels?.[role]?.[e.panel]) bad.push(`${where}.panel: no panel "${e.panel}" in ${role}. Try: aclivery panel list <car> --texture ${role}`);
@@ -353,9 +354,15 @@ export function coverage(design, brief, regions) {
     const before = out.length;
     const ok = KIND_OK[l.kind] ?? (() => true);
     const label = `layer ${i} "${String(l.what ?? l.kind).slice(0, 60)}" (${l.kind})`;
-    // A brand mark with its file set is answered by the elements that use THAT file, not by words: two marks of one brand (the claw and the
+    // A brand mark with its file set is answered by the elements that use THAT file, not by words: two marks of one brand (a brand's symbol and its
     // wordmark) must not vouch for each other.
     let byAsset = null;
+    // Generated art that names a style ("style": "plumes") is answered by an element of the pattern that makes it.
+    const stylePattern = l.source === 'generate' ? STYLES[String(l.style ?? '').trim()] : null;
+    if (stylePattern) {
+      byAsset = items.filter((it) => it.e.pattern === stylePattern);
+      if (!byAsset.length) { out.push(`${label} is generated art in the style "${l.style}" (the "${stylePattern}" pattern) but the design has no element of that pattern. Add one, or ${leave(i)}`); continue; }
+    }
     if (l.source === 'fetch' && String(l.asset ?? '').trim()) {
       const want = path.basename(String(l.asset)).toLowerCase();
       const fileOf = (name) => { const a = design.assets?.[name]; return path.basename(String(typeof a === 'string' ? a : a?.file ?? '')).toLowerCase(); };
@@ -381,7 +388,7 @@ export function coverage(design, brief, regions) {
 }
 
 /**
- * A text element that spells the brand of a fetch layer that has its logo file is a redrawn brand mark (a run typed MONSTER on the wing instead of using the logo).
+ * A text element that spells the brand of a fetch layer that has its logo file is a redrawn brand mark (a run typed a sponsor name on the wing instead of using the logo).
  * A warning, not an error; a decision tagged with the layer silences it.
  */
 export function brandTextWarnings(design, brief) {
@@ -498,7 +505,7 @@ export async function run(argv) {
         for (const name of panelsOf(e, pack.profile, role)) {
           const pn = pack.profile.panels[role][name], [wm, hm] = uprightM(pn);
           const pxPerM = Math.min(tex.width / pn.metresPerUv[0], 4096 / Math.max(wm, hm));
-          const img = await renderPattern(e.pattern, { widthM: wm, heightM: hm, pxPerM, seed: patternSeed(e, name), density: e.density ?? DEFAULT_DENSITY, color });
+          const img = await renderPattern(e.pattern, { widthM: wm, heightM: hm, pxPerM, seed: patternSeed(e, name), density: e.density ?? DEFAULT_DENSITY, color, angle: e.angle });
           const png = path.join(work, 'pattern', `${role}-${i}-${name}.png`);
           fs.writeFileSync(png, img.png);
           // Always --under: decoration fills the whole panel box and must not stop logos from being placed on it.
@@ -555,6 +562,8 @@ export async function run(argv) {
     const rows = await placementTable(design, pack.profile, assetFile);
     const cut = rows.filter((r) => r.includes('cut off')), layers = Object.entries(byLayer).map(([k, n]) => `${k} ${n}`).join(', ');
     console.log(`review, ${only ? `part build [${only.join(', ')}], not a round (rounds done: ${round})` : `round ${round}`}: ${Object.keys(design.textures).length} texture(s) [${Object.keys(design.textures).join(', ')}], elements by layer: ${layers}; ${warnings.length} warning(s), ${cut.length} element(s) cut off, ${missing.length} layer(s) missing`);
+    const usedPatterns = [...new Set(Object.values(design.textures).flatMap((t) => t.elements).filter((e) => e.pattern).map((e) => e.pattern))];
+    if (usedPatterns.length) console.log(`  generated art: ${usedPatterns.map((p) => `${p} (${LIKENESS[p]})`).join('; ')}. These are stand-ins the kit makes, a rough likeness and never a copy of hand-drawn art: say so in the plan and in the report. The user's own art file replaces them (an image element with "layer": "tone").`);
     for (const r of cut) console.log('  fix: ' + r.trim().slice(0, 230));
     for (const w of warnings) console.log('  fix: ' + w.slice(0, 230));
     for (const m of missing) console.log('  missing: ' + m.slice(0, 260));

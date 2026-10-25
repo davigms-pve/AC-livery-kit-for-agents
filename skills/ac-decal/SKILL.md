@@ -8,11 +8,11 @@ license: PolyForm-Noncommercial-1.0.0
 # Decal
 
 ```
-aclivery decal <car> --panel left_mid --image logo.png --fill "#ffffff" --out work/EXT_Main.png --at 0.1,0.3,0.8,0.4
-aclivery decal <car> --panel right_mid --image logo.png --base work/EXT_Main.png --out work/EXT_Main.png
+aclivery decal <car> --panel <left panel> --image logo.png --fill "#ffffff" --out work/<body texture>.png --at 0.1,0.3,0.8,0.4
+aclivery decal <car> --panel <right panel> --image logo.png --base work/<body texture>.png --out work/<body texture>.png
 ```
 
-First call starts the texture from a flat colour (`--fill`) at the texture's real size (8192x2956 for the P92 body;
+First call starts the texture from a flat colour (`--fill`) at the texture's real size (for example 8192x2956 for a large body texture;
 `--size 2048` makes a fast small test). Every later call adds to it (`--base` = the same file). The base must keep
 the real aspect ratio or art would stretch; the command refuses a wrong-aspect base.
 One decal per call. You name the panel; the command applies the panel's rotation so the image reads upright.
@@ -31,9 +31,9 @@ One decal per call. You name the panel; the command applies the panel's rotation
 ## Text, cut-out textures and small textures
 
 ```
-aclivery text <car> --panel right_rear --text "T. THIELE" --ink "#222222" --bold --base work/EXT_Main.png --out work/EXT_Main.png --at 0.25,0.78,0.5,0.06
-aclivery decal <car> --texture door_plates --panel whole --color "#ffffff" --fill transparent --out work/Door_Plates.png --at <x,y,w,h of the card>
-aclivery car size <car> door_plates 2048x640
+aclivery text <car> --panel <panel> --text "A. DRIVER" --ink "#222222" --bold --base work/<body texture>.png --out work/<body texture>.png --at 0.25,0.78,0.5,0.06
+aclivery decal <car> --texture <plate texture> --panel whole --color "#ffffff" --fill transparent --out work/<plate texture>.png --at <x,y,w,h of the card>
+aclivery car size <car> <plate texture> 2048x640
 ```
 
 - `text` draws the words, then places them like a decal (upright, aspect kept). Use `--ink` for the colour.

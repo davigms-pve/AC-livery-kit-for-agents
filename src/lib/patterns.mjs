@@ -1,9 +1,16 @@
-// Deterministic decorative patterns for livery art when no original file exists: faint ink line-art (vines, feathers),
-// paint splatter and brush strokes. Pure geometry in metres on a panel of a given real size; same seed, same art.
-// Placeholders, not copies of any artwork. Sizes are in metres so motifs look the same size on every panel.
+// Deterministic decorative patterns for livery art when no original file exists: soft plumes, ink line-art (vines, feathers),
+// cracks, splatter, brush strokes, stripes, camouflage blotches and halftone dots. Pure geometry in metres on a panel of a given real
+// size; same seed, same art. Stand-ins in a named style, never copies of any artwork. Sizes are in metres so motifs look the same size on every panel.
 import sharp from 'sharp';
 
-export const PATTERNS = ['ink-lines', 'leaves', 'cracks', 'splatter', 'brush'];
+export const PATTERNS = ['ink-lines', 'leaves', 'cracks', 'splatter', 'brush', 'stripes', 'camo', 'dots'];
+/** The style a layer of the analysis can name ("style": "plumes") and the pattern that makes it. "none" means no generator fits: ask for an art file or leave it out. */
+export const STYLES = { plumes: 'leaves', vines: 'ink-lines', cracks: 'cracks', splatter: 'splatter', brush: 'brush', stripes: 'stripes', camouflage: 'camo', dots: 'dots' };
+/** What each pattern looks like, in words, so a plan or a report can say how rough the likeness is. */
+export const LIKENESS = {
+  'ink-lines': 'thin vines and feathers drawn as line art', leaves: 'soft fanned plumes with feathered edges', cracks: 'fine branching cracks', splatter: 'paint splatter blots',
+  brush: 'tapered brush strokes', stripes: 'parallel bands at an angle', camo: 'irregular overlapping blotches', dots: 'a halftone dot gradient',
+};
 /** Patterns that are quiet background art by default (drawn under everything, checked for discretion). */
 export const TONAL = ['ink-lines', 'leaves', 'cracks'];
 /** Colour and opacity used when the design does not give them: a slightly darker tint, quiet on a near-white body. */
@@ -13,11 +20,14 @@ export const DEFAULTS = {
   cracks: { color: '#6f7378', opacity: 0.7 },
   splatter: { color: '#4ec4d6', opacity: 1 },
   brush: { color: '#4ec4d6', opacity: 1 },
+  stripes: { color: '#55585d', opacity: 0.85 },
+  camo: { color: '#6b7068', opacity: 0.8 },
+  dots: { color: '#55585d', opacity: 0.7 },
 };
 /** What "discreet" means for tonal art, so `apply --check` can warn. Heuristics: the owner's eye is the real test. */
 export const DEFAULT_DENSITY = 0.8;
 export const DISCREET = {
-  'ink-lines': { strokeContrast: 0.55, meanShift: 0.03 },   // thin dark vines read as discreet when they cover little (the references use dark thin lines)
+  'ink-lines': { strokeContrast: 0.55, meanShift: 0.03 },   // thin dark vines read as discreet when they cover little
   leaves: { strokeContrast: 0.45, meanShift: 0.06 },   // big soft shapes: allowed to be bolder and cover more
   cracks: { strokeContrast: 0.35, meanShift: 0.02 },
 };
@@ -47,7 +57,7 @@ function inkLines(W, H, density, rnd) {
     paths.push(`<path d="M${f(x)} ${f(y)}Q${f(mx + px)} ${f(my + py)} ${f(tx)} ${f(ty)}Q${f(mx - px)} ${f(my - py)} ${f(x)} ${f(y)}Z" stroke-width="${f(w)}"/>`);
     ink += 2.1 * L * w;
   };
-  // A small rose bud: a tight spiral, like the ones on the thorny vines.
+  // A small bud: a tight spiral with two leaves, on the vines.
   const rose = (x, y, r, w) => {
     const pts = [];
     for (let i = 0; i <= 14; i++) { const k = i / 14, a = k * 5.2 + rnd() * 0.2, rr = r * (0.15 + 0.85 * k); pts.push([x + Math.cos(a) * rr, y + Math.sin(a) * rr]); }
@@ -89,8 +99,8 @@ function inkLines(W, H, density, rnd) {
   return { body: `<g fill="none" stroke-linecap="round" stroke-linejoin="round">${paths.join('')}</g>`, covered: ink };
 }
 
-// Soft filled grey leaves in fanned clusters (fronds), the placeholder for the can's leaf scrollwork. Several overlapping
-// blades at different opacities give the feathered edge seen on the reference car.
+// Soft filled leaves in fanned clusters (fronds): the plume style. Several overlapping blades at different opacities give a
+// feathered edge.
 function leaves(W, H, density, rnd) {
   const out = []; let covered = 0;
   const blade = (x, y, a, L, wd, op) => {
@@ -167,14 +177,60 @@ function brush(W, H, density, rnd) {
   return { body: out.join(''), covered, fill: true };
 }
 
+// Parallel bands at an angle (racing stripes, speed lines): the pitch follows the density, a few gaps keep it from reading as a grid.
+function stripes(W, H, density, rnd, angle) {
+  const deg = angle ?? 20, D = Math.hypot(W, H), cx = W / 2, cy = H / 2, pitch = 0.32 - 0.26 * Math.min(1, density), half = Math.ceil(D / pitch / 2);
+  const out = []; let share = 0, n = 0;
+  for (let k = -half; k <= half; k++) {
+    n++;
+    if (rnd() < 0.12) continue;
+    const wd = pitch * (0.25 + rnd() * 0.3);
+    out.push(`<rect x="${f(cx - D)}" y="${f(cy + k * pitch - wd / 2)}" width="${f(2 * D)}" height="${f(wd)}" transform="rotate(${f(deg)} ${f(cx)} ${f(cy)})"/>`);
+    share += wd / pitch;
+  }
+  return { body: out.join(''), covered: W * H * (n ? share / n : 0), fill: true };
+}
+
+// Irregular overlapping blotches with smooth edges (camouflage).
+function camo(W, H, density, rnd) {
+  const out = []; let covered = 0;
+  const count = Math.max(1, Math.round(W * H * density * 5));
+  for (let c = 0; c < count; c++) {
+    const cx = rnd() * W, cy = rnd() * H, r0 = 0.08 + rnd() * 0.2, k = 10, op = 0.55 + rnd() * 0.4;
+    const p = Array.from({ length: k }, (_, i) => { const r = r0 * (0.6 + rnd() * 0.7), a = (i / k) * 2 * Math.PI; return [cx + Math.cos(a) * r, cy + Math.sin(a) * r]; });
+    const mid = (a, b) => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+    let d = `M${f(mid(p[k - 1], p[0])[0])} ${f(mid(p[k - 1], p[0])[1])}`;
+    for (let i = 0; i < k; i++) { const m = mid(p[i], p[(i + 1) % k]); d += `Q${f(p[i][0])} ${f(p[i][1])} ${f(m[0])} ${f(m[1])}`; }
+    out.push(`<path d="${d}Z" fill-opacity="${f(op)}"/>`);
+    covered += Math.PI * r0 * r0 * 0.8 * op;
+  }
+  return { body: out.join(''), covered, fill: true };
+}
+
+// A halftone: rows of dots whose size grows along the angle (a fade from nothing to dense).
+function dots(W, H, density, rnd, angle) {
+  const a = ((angle ?? 0) * Math.PI) / 180, ux = Math.cos(a), uy = Math.sin(a);
+  let pitch = 0.06 - 0.03 * Math.min(1, density);
+  while ((W / pitch) * (H / pitch) > 30000) pitch *= 1.3;
+  const proj = (x, y) => x * ux + y * uy, lo = Math.min(0, W * ux, H * uy, W * ux + H * uy), hi = Math.max(0, W * ux, H * uy, W * ux + H * uy);
+  const out = []; let covered = 0;
+  for (let row = 0, y = 0; y <= H + pitch; row++, y += pitch * 0.866) {
+    for (let x = (row % 2) * pitch / 2; x <= W + pitch; x += pitch) {
+      const t = hi > lo ? (proj(x, y) - lo) / (hi - lo) : 0.5, r = pitch * 0.5 * (0.1 + 0.8 * t) * (0.9 + 0.2 * rnd());
+      out.push(`<circle cx="${f(x)}" cy="${f(y)}" r="${f(r)}"/>`); covered += Math.PI * r * r;
+    }
+  }
+  return { body: out.join(''), covered, fill: true };
+}
+
 /**
  * Build one pattern for a panel of widthM x heightM metres (as the viewer sees it, upright).
  * Returns the SVG text, its pixel size and `coverage`, the share of the panel the ink covers (an estimate).
  */
-export function makePattern(kind, { widthM, heightM, pxPerM, seed = 1, density = 0.3, color }) {
+export function makePattern(kind, { widthM, heightM, pxPerM, seed = 1, density = 0.3, color, angle }) {
   if (!PATTERNS.includes(kind)) throw new Error(`unknown pattern "${kind}" (known: ${PATTERNS.join(', ')})`);
   const rnd = mulberry32(hashSeed(seed));
-  const g = { 'ink-lines': inkLines, leaves, cracks, splatter, brush }[kind](widthM, heightM, density, rnd);
+  const g = { 'ink-lines': inkLines, leaves, cracks, splatter, brush, stripes, camo, dots }[kind](widthM, heightM, density, rnd, angle);
   const w = Math.max(1, Math.ceil(widthM * pxPerM)), h = Math.max(1, Math.ceil(heightM * pxPerM));
   const c = color ?? DEFAULTS[kind].color;
   const body = g.fill ? `<g fill="${c}">${g.body}</g>` : g.body.replace('<g ', `<g stroke="${c}" `);

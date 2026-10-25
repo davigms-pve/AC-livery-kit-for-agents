@@ -45,5 +45,5 @@ You must be able to look at the image; if not, ask the user for the view and do 
 
 ## Write it down
 
-Record the view in the reference, and in `notes` what is worth copying (`"notes":"flat side, door plate and claw, nose on the right"`).
+Record the view in the reference, and in `notes` what is worth copying (`"notes":"flat side, a door sponsor and the number, nose on the right"`).
 Say in the layer's `evidence` which photo and view you read the layer from (`ac-analyze`).

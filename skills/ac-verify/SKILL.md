@@ -27,7 +27,7 @@ if you cannot, say so and do not claim a verdict (skill `ac-livery`, rules).
    - **colour and tone**: same hue and about the same light or dark; quiet art should stay quiet. Judge tone with the lighting in mind: art can look pale in a bright render or photo and clear in a dull one
 4. **One fix per `off` or `wrong`, in the design file only** (`at`, `rotate`, `opacity`, `color`). Do not change what is `ok`.
 5. **Record the verdict** so the next round does not redo it:
-   `aclivery brief add <slug> decisions '{"layer":3,"element":"claw hood","verdict":"fix","place":"ok","size":"off: too small","note":"raise to 0.3 wide"}'`
+   `aclivery brief add <slug> decisions '{"layer":3,"element":"logo on the hood","verdict":"fix","place":"ok","size":"off: too small","note":"raise to 0.3 wide"}'`
    When it is `ok` on all five, say `"verdict":"ok"` and the round it was checked in.
 6. After the fixes run a full `apply` (that is a round), then check only what you changed.
 

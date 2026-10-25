@@ -40,7 +40,7 @@ aclivery car notes <car>                          what is already known about th
    text you cannot read; two photos disagree; a logo has no file in `assets/logos` (ask if they have it, or whether you may look for
    it; name the exact page and wait for the yes, see `ac-logos`); you would otherwise guess. Do not ask what the photos already show.
 5. **How to ask (the human part).** One question per message. Plain words: "the left door", "the roof", "the little crest on the
-   hood", never panel names or file extensions. Say what you saw and why you are asking, offer a default ("I think it is the Porsche
+   hood", never panel names or file extensions. Say what you saw and why you are asking, offer a default ("I think it is the team's
    crest; shall I use that?"), and make "I don't know, skip it" a fine answer. Point at the photo ("photo 3, near the top") or show a
    crop instead of describing it. If they cannot picture where something goes, show `render --regions` and let them pick by colour.
    Never ask them to run commands or choose technical settings.

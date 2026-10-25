@@ -18,7 +18,7 @@ by default (every view in one image); open it once, not six times. The path is p
   DDS of the same name wins, so you can preview work in progress.
 - Views: `front-left front-right left right front rear rear-left rear-right top three-quarter`.
   `left` is the car's left. Pick the view that matches your reference photo.
-- `--probe left_mid,right_mid` paints those panels magenta first. Use it to learn where a panel is.
+- `--probe <panel>,<panel>` paints those panels magenta first. Use it to learn where a panel is.
 - Render shows only what you override; everything else uses the car's own stock art.
 - Known limits: no reflections or normal maps; the windshield banner and door plates are other textures, so
   they look grey unless you override them. 8 stock textures cannot be decoded and draw grey (the command says so).
@@ -36,7 +36,7 @@ aclivery compare <car> --skin work --brief <slug> --each --out work/cmp        #
 aclivery compare <car> --skin work --ref photo1.jpg --views right --crop 0.1,0.3,0.4,0.4   # zoom on the door in both
 ```
 `--each` gives one pair per image (easier to read than a tall sheet). `--crop x,y,w,h` (fractions) cuts the same box out of the
-reference and our render and shows it larger, to read detail (a font, a claw's shape); use it with one pair.
+reference and our render and shows it larger, to read detail (a font, a logo's shape); use it with one pair.
 
 One image: each reference photo on the left, our render from the same view on the right. Look at it and name the
 differences (position, size, colour, missing parts); fix the biggest first. **Check the view for each reference:** a

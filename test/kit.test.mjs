@@ -705,7 +705,7 @@ test('brief plan: NEXT walks sourcing, fetch assets, the design build, the missi
   let b = base();
   assert.match(next(b).do, /decide how each layer is produced.*Suggested: 1 fetch, 2 generate, 3 construct/s);
   // 2. sources set, the brand mark has no file: fetch it (no placeholder)
-  b.analysis.layers[1].source = 'fetch'; b.analysis.layers[2].source = 'generate'; b.analysis.layers[3].source = 'construct';
+  b.analysis.layers[1].source = 'fetch'; b.analysis.layers[2].source = 'generate'; b.analysis.layers[2].style = 'plumes'; b.analysis.layers[3].source = 'construct';
   assert.match(next(b).do, /layer 1 "Monster claw" is a brand mark to FETCH, not redraw/);
   b.analysis.layers[1].asset = 'assets/logos/claw_placeholder.png';
   assert.match(next(b).do, /to FETCH/);                     // a placeholder does not count
@@ -740,7 +740,7 @@ test('brief: a skipped layer shows its reason and leaves the coverage check; an 
   const layer = (o) => ({ confidence: 'high', evidence: 'a.jpg left', ...o });
   const pdir = path.join(home, 'projects', 'dn'); fs.mkdirSync(pdir, { recursive: true });
   const layers = [layer({ kind: 'base', what: 'white' }), layer({ kind: 'text', what: 'driver name', source: 'construct' }),
-    layer({ kind: 'logo', what: 'Porsche crest', source: 'skip', why: 'no file; the owner has not said yes to a download' }), layer({ kind: 'tonal-art', what: 'grey leaves', source: 'generate' })];
+    layer({ kind: 'logo', what: 'Porsche crest', source: 'skip', why: 'no file; the owner has not said yes to a download' }), layer({ kind: 'tonal-art', what: 'grey leaves', source: 'generate', style: 'plumes' })];
   fs.writeFileSync(path.join(pdir, 'brief.json'), JSON.stringify({ slug: 'dn', title: 'Done', car: { id: 'dn' }, references: [{ file: 'a.jpg', view: 'left' }], viewsWaived: ALLW, mode: 'batch', analysis: { layers },
     build: { round: 3, missing: 0, elements: 1, cutOff: 0, exported: true, design: 'd.json' } }));
   const file = path.join(dir, 'd.json');
@@ -999,7 +999,7 @@ test('modes: normal asks for a plan check-in before building and a first-draft r
     layer({ kind: 'base', what: 'white' }),
     layer({ kind: 'logo', what: 'Monster claw', brand: 'Monster Energy', part: 'symbol', source: 'fetch', asset: 'assets/logos/prepped/monster_claw.png' }),
     layer({ kind: 'text', what: 'driver name T. THIELE', source: 'construct' }),
-    layer({ kind: 'tonal-art', what: 'grey hand-drawn feathers', source: 'generate' }),
+    layer({ kind: 'tonal-art', what: 'grey hand-drawn feathers', source: 'generate', style: 'plumes' }),
     layer({ kind: 'logo', what: 'SC disc', source: 'skip', why: 'no file' }) ] } });
   const first = (b) => gaps(b, { packExists: true, fileExists: (p) => files.has(p) })[0];
   assert.match(first({ ...mk(null) }).ask, /How involved do you want to be/);
@@ -1009,7 +1009,7 @@ test('modes: normal asks for a plan check-in before building and a first-draft r
   assert.match(ask, /Before I start building, here is my plan/);
   assert.match(ask, /files for: Monster claw\./);
   assert.match(ask, /draw myself: driver name T\. THIELE\./);
-  assert.match(ask, /rough likeness of .*: grey hand-drawn feathers\./);
+  assert.match(ask, /rough likeness of .*: grey hand-drawn feathers \(plumes\)\./);
   assert.match(ask, /Left out: SC disc \(no file\)\./);
   assert.match(first(n).then, /ask the user, then stop and wait\. Only after they answer: aclivery brief set md planApproved '\{"asked"/);
   n.planApproved = 'yes, go ahead, leave the disc out';   // a bare string is not the user's words: the question stays
@@ -1051,4 +1051,59 @@ test('DONE prints what the user actually said at the plan, the draft and the wai
   assert.match(done, /views the user had no photo of: front \(asked "Do you have a photo of that\?" -> "no, sorry, only the side"\); rear .*; top /);
   assert.match(done, /plan check-in: asked "Here is my plan, is that OK\?" -> "yes, leave the disc out"/);
   assert.match(done, /first draft review: asked "What looks wrong\?" -> "the doors need the claw"/);
+});
+
+test('patterns: every style is deterministic, covers part of the panel, renders to the panel size and has a name and a likeness', async () => {
+  const { PATTERNS, STYLES, LIKENESS, DEFAULTS, makePattern, renderPattern } = await import('../src/lib/patterns.mjs');
+  assert.deepEqual(PATTERNS.filter((p) => !Object.values(STYLES).includes(p)), []);        // every pattern has a style name
+  assert.deepEqual(Object.values(STYLES).filter((p) => !PATTERNS.includes(p)), []);         // and every style points at a pattern
+  for (const k of PATTERNS) {
+    assert.ok(LIKENESS[k] && DEFAULTS[k], `${k} has a likeness and defaults`);
+    const o = { widthM: 1.2, heightM: 0.6, pxPerM: 100, seed: 'a', density: 0.6 };
+    const one = makePattern(k, o), two = makePattern(k, o), other = makePattern(k, { ...o, seed: 'b' });
+    assert.equal(one.svg, two.svg, `${k}: same seed, same art`);
+    assert.notEqual(one.svg, other.svg, `${k}: another seed, another art`);
+    assert.ok(one.coverage > 0 && one.coverage <= 1, `${k}: coverage ${one.coverage}`);
+    const png = await renderPattern(k, o);
+    const meta = await sharp(png.png).metadata();
+    assert.deepEqual([meta.width, meta.height], [120, 60]);
+  }
+  // the angle turns stripes and dots
+  const s0 = makePattern('stripes', { widthM: 1, heightM: 1, pxPerM: 50, seed: 1, density: 0.5, angle: 0 }).svg, s90 = makePattern('stripes', { widthM: 1, heightM: 1, pxPerM: 50, seed: 1, density: 0.5, angle: 90 }).svg;
+  assert.notEqual(s0, s90);
+  assert.throws(() => makePattern('nope', { widthM: 1, heightM: 1, pxPerM: 10 }), /unknown pattern "nope"/);
+});
+
+test('styles: a generated layer names its style, brief show asks for it, and coverage wants a pattern of that style; the review states the limit', async () => {
+  const { gaps } = await import('../src/commands/brief.mjs');
+  const { coverage, validateDesign } = await import('../src/commands/apply.mjs');
+  const layer = (o) => ({ confidence: 'high', evidence: 'a.jpg left', ...o });
+  const b = { slug: 'st', mode: 'batch', car: { id: 'x' }, references: [{ file: 'a.jpg', view: 'left' }], viewsWaived: ALLW, analysis: { layers: [
+    layer({ kind: 'base', what: 'white' }), layer({ kind: 'tonal-art', what: 'camouflage blotches on the sides', source: 'generate', where: 'doors' }) ] } };
+  const next = () => gaps(b, { packExists: true, fileExists: () => true })[0];
+  assert.match(next().do, /layer 1 "camouflage blotches on the sides" is generated art: set its style .* plumes, vines, cracks, splatter, brush, stripes, camouflage, dots, or none/);
+  b.analysis.layers[1].style = 'swirls';
+  assert.match(next().do, /has style "swirls", which is not one of/);
+  b.analysis.layers[1].style = 'camouflage';
+  assert.match(next().do, /build in parts/);
+  b.analysis.layers[1].style = 'none';
+  assert.match(next().do, /build in parts/);                 // none: the plan says so and asks for a file
+  b.analysis.layers[1].style = 'camouflage';
+  const regions = { regions: [{ name: 'left_side', panels: [{ name: 'sidep' }] }] };
+  const wrong = { textures: { ext_main: { elements: [{ pattern: 'leaves', panels: 'visible' }] } } };
+  assert.match(coverage(wrong, b, regions).join('\n'), /generated art in the style "camouflage" \(the "camo" pattern\) but the design has no element of that pattern/);
+  const right = { textures: { ext_main: { elements: [{ pattern: 'camo', panels: 'visible' }] } } };
+  assert.equal(coverage(right, b, regions).length, 0);
+  // the angle is accepted on patterns only
+  const profile = { textures: { ext_main: { file: 'EXT_Main.dds', width: 400, height: 200 } }, panels: { ext_main: { a: { rect: [0, 0, 1, 1], visible: 0.9, metresPerUv: [2, 1], textRotation: 0 } } } };
+  assert.deepEqual(validateDesign({ car: 'x', textures: { ext_main: { elements: [{ pattern: 'stripes', panels: 'visible', angle: 30 }] } } }, profile), []);
+  assert.match(validateDesign({ car: 'x', textures: { ext_main: { elements: [{ pattern: 'stripes', panels: 'visible', angle: 300 }] } } }, profile).join('\n'), /angle: 0 to 180 degrees/);
+  assert.match(validateDesign({ car: 'x', textures: { ext_main: { elements: [{ panel: 'a', color: '#ffffff', angle: 30 }] } } }, profile).join('\n'), /angle: only on pattern elements/);
+  // the review says how rough the stand-in is
+  const home = tmp(); fakeCar(home, 'sy', { file: 'EXT_Main.dds', width: 400, height: 200 }, { a: { rect: [0, 0, 1, 1], textRotation: 0, metresPerUv: [2, 1], visible: 0.9 } });
+  const file = path.join(tmp(), 'd.json');
+  fs.writeFileSync(file, JSON.stringify({ car: 'sy', textures: { ext_main: { fill: '#ffffff', elements: [{ pattern: 'stripes', panels: 'visible', angle: 20, density: 0.5, seed: 3 }] } } }));
+  const r = run(['apply', file, '--no-render', '--out', path.join(tmp(), 'o')], { ACLIVERY_HOME: home });
+  assert.equal(r.status, 0, r.stderr);
+  assert.match(r.stdout, /generated art: stripes \(parallel bands at an angle\)\. These are stand-ins the kit makes, a rough likeness and never a copy of hand-drawn art/);
 });

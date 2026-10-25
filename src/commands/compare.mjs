@@ -16,7 +16,7 @@ aclivery compare <car> --skin <dir> --brief <slug>        use the references rec
   --each   one image per reference (reference | ours) in a FOLDER (--out), named <n>-<view>.png, instead of one tall sheet.
            A small model reads one pair better than five rows.
   --crop   zoom in: keep only this part of BOTH the reference and our render, as fractions x,y,w,h of each picture
-           (for example 0.1,0.3,0.4,0.4 for the door), and show it larger. To read detail (the number's font, the claw's shape).
+           (for example 0.1,0.3,0.4,0.4 for the door), and show it larger. To read detail (the number's font, a logo's shape).
            The same box is cut from every row, so use it with one pair (--ref one.jpg --views right) or rows of the same view.
   Rows are matched by order. A view is a fixed camera, so expect similar, not identical, framing.`;
 

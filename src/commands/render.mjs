@@ -11,7 +11,7 @@ export const help = `aclivery render <car> (--skin <dir|file> | --regions) [--vi
                          [--probe panelA,panelB] [--texture role] [--kn5 path]
   Draws the car wearing the skin, headless (about 2 s per view). By default ONE image holding every view,
   because every image shown to a model costs a turn.
-  --skin   a folder of .dds/.png overrides named like the car's textures (EXT_Main.dds, Door_Plates.png ...)
+  --skin   a folder of .dds/.png overrides named like the car's textures (a body texture, a small texture ...)
            or a single texture file. PNGs let you preview work in progress without encoding DDS.
   --views  front-left, front-right, left, right, front, rear, rear-left, rear-right, top, three-quarter
            (default: ${DEFAULT_VIEWS.join(', ')}). left = the car's left, as in the game.

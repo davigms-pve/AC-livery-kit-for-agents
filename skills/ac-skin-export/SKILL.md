@@ -8,7 +8,7 @@ license: PolyForm-Noncommercial-1.0.0
 # Validate and export
 
 ```
-aclivery export <workDir> --car <id> --name "T Thiele 71" [--alpha EXT_Main]
+aclivery export <workDir> --car <id> --name "My Skin" [--alpha EXT_Main]
 aclivery validate skin dist/<Name> --car <id>
 aclivery validate dds <file.dds>
 ```
@@ -22,7 +22,7 @@ that car and edit the values.
   validates every DDS, and writes `dist/<Name>/` plus `dist/<Name>.zip`. It fails if a DDS is broken.
 - Install: drag the zip onto Content Manager, then fully quit and restart Assetto Corsa (it caches skin names).
 - Delete `cm_skin.json` from the skin unless intended: it can tint the body over the livery.
-- A non-power-of-two size (such as the P92's 8192x2956) prints a note. The P92's own green skin of that size shows in
+- A non-power-of-two size (such as 8192x2956) prints a note. One mod car's own skin of that size is known to show in
   the game's preview; for other cars it is unverified. Prefer a power-of-two size on cars you have not tested.
   Width and height should be multiples of 4 for DXT textures (the validator warns).
 - **Not verified:** the kit never loads the skin in the game. Say so, and ask the user to check in Content Manager.

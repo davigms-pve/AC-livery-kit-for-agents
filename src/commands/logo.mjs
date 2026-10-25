@@ -9,7 +9,7 @@ export const help = `aclivery logo fetch <url> --name <name> [--yes]   download 
 aclivery logo inspect <file>                        size, transparency, background, and quality warnings
 aclivery logo prep <in> --out <png> [--crop x,y,w,h] [--key-bg | --key-light] [--erase x,y,w,h] [--tint #RRGGBB] [--grey] [--flip] [--trim] [--size 2000]
     --key-bg  turn a near-uniform background (taken from the corners) transparent
-    --crop    keep only part of the picture, as fractions x,y,w,h (for example 0,0,1,0.62 keeps the top 62%: the MONSTER and ENERGY rows of a lockup)
+    --crop    keep only part of the picture, as fractions x,y,w,h (for example 0,0,1,0.62 keeps the top 62%: the top rows of a lockup)
     --erase   clear a box (fractions x,y,w,h of the cropped picture) to remove stray bits, for example a piece of the next word left at an edge.
               Applied before --key-bg, so a corner it clears does not count in the flat-corner test
     --key-light  make light neutral pixels (white, light grey) transparent: for logos with a baked-in checkerboard or a light backdrop that is not one flat colour.

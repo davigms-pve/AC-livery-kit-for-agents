@@ -54,7 +54,7 @@ export function validateDds(file) {
   if (mips < levels) add('warn', `mip chain is ${mips} levels, a full chain would be ${levels} (distant textures shimmer)`);
   if (!(flags & FLAGS.MIPMAPCOUNT) && mips > 1) add('warn', 'mip count set but DDSD_MIPMAPCOUNT flag is not');
   if (!isPow2(width) || !isPow2(height)) {
-    add('note', `${width}x${height} is not a power of two. The P92's own 8192x2956 green skin shows in the game's preview, so that size loads on that car; other cars and sizes are unverified (UVs are normalised, so a power-of-two size draws the same art)`);
+    add('note', `${width}x${height} is not a power of two. One mod car's own 8192x2956 skin is known to show in the game's preview, so that size loads on that car; other cars and sizes are unverified (UVs are normalised, so a power-of-two size draws the same art)`);
   }
 
   if (BLOCK[fourCC] && (width % 4 || height % 4)) {

@@ -19,7 +19,7 @@ export const help = `aclivery decal <car> --panel <name> (--image <png> | --colo
   --under  this is quiet background art (tonal ink, texture): it may sit under logos, so it skips the overlap check and is
            not remembered by it. Everything else is placed over it.
   --fill   start from a flat colour, or "transparent" (door plates and other cut-out textures) (paints the whole texture) instead of --base.
-  --size   canvas width for a NEW texture. Default: the texture's real size (e.g. 8192x2956 for the P92 body).
+  --size   canvas width for a NEW texture. Default: the texture's real size (e.g. 8192x2956 for a large body texture).
            Smaller is fine for quick tests; height follows the real aspect ratio, rounded to a multiple of 4.
   Then check it: aclivery render <car> --skin <folder holding the png> --views left,right
   Limits: a panel's rect is the bounding box of its UV island, so art can spill into empty atlas space;
@@ -51,7 +51,7 @@ function fillPoly(mask, w, h, poly, left, top, W, H) {
 }
 
 /**
- * A panel's rect is only the bounding box of its island, and other islands can sit inside it (the P92's door lies inside the rear
+ * A panel's rect is only the bounding box of its island, and other islands can sit inside it (a door island can lie inside a rear
  * quarter's box). For a whole-panel paint, clear the pixels that fall inside another panel's outline and not inside this one's,
  * so a colour or pattern on one panel does not flood its neighbours. Own edges keep the full box (the outlines are simplified).
  */
@@ -152,7 +152,7 @@ export async function run(argv) {
   const isPaint = !!flags.color && !flags.image;
   if (!flags.overlap && !flags.under) {
     for (const p of placed) {
-      // Paint is background; and a panel's box can hold another panel's island (the P92's door lies in the rear quarter's box), so only the same panel is compared.
+      // Paint is background; and a panel's box can hold another panel's island (a door island can lie in a rear quarter's box), so only the same panel is compared.
       if (p.paint || p.panel !== flags.panel) continue;
       const ix = Math.max(0, Math.min(mine[0] + mine[2], p.box[0] + p.box[2]) - Math.max(mine[0], p.box[0]));
       const iy = Math.max(0, Math.min(mine[1] + mine[3], p.box[1] + p.box[3]) - Math.max(mine[1], p.box[1]));

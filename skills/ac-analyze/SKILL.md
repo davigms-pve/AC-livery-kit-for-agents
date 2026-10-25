@@ -20,7 +20,7 @@ aclivery brief set <slug> analysis '{"summary":"...","layers":[...],"overlapRule
 ## What to look for (in this order)
 
 1. **Base**: the body colour, and whether it is flat, gradient or metallic.
-2. **Large graphics**: big shapes, stripes, a big logo or claw. Where, how large (fraction of the panel), what colour.
+2. **Large graphics**: big shapes, stripes, a big logo or symbol. Where, how large (fraction of the panel), what colour.
 3. **Subtle tonal art**: faint patterns on the base (for example light grey ink feathers or vines on an almost white car,
    mimicking the artwork of a can). They are low-contrast, so easy to miss, and they are often *the* identity of the
    livery. Record where they appear, their colour (a slightly darker tint of the base) and rough density. **Never drop
@@ -44,16 +44,16 @@ aclivery brief set <slug> analysis '{"summary":"...","layers":[...],"overlapRule
 - Write the analysis into the brief as the JSON above, one object per layer:
   `{"kind":"tonal-art","what":"grey ink feathers","where":"all body panels","tone":"subtle","confidence":"medium","evidence":"a.jpg left, door and rear quarter","notes":"slightly darker than body, denser near the doors"}`.
   Kinds: `base large-graphic tonal-art accent marking logo text plate`. Tone: `subtle` or `bold`.
-- **Write `where` with the car's own words** (hood, front fender, roof, doors, sills, quarter, rear, wing, nose, mirrors; "rear" alone means the back of the car, "rear quarter" and "rear fender" mean the side): `apply`'s review checks that something is placed in each place you name ("claw: hood, roof, doors" fails if the roof has none).
+- **Write `where` with the car's own words** (hood, front fender, roof, doors, sills, quarter, rear, wing, nose, mirrors; "rear" alone means the back of the car, "rear quarter" and "rear fender" mean the side): `apply`'s review checks that something is placed in each place you name ("the big symbol: hood, roof, doors" fails if the roof has none).
   Give a design element `"covers": "<word from the layer>"` when its name does not match the layer.
-- **Then give every layer a `source`** (the next `brief show` step asks for it): `fetch` = a brand mark or logo that exists as a file (the claw, MOTUL, GoPro, PORSCHE, a club crest): never redraw it; `generate` = livery art with no file (grey leaves, vines, cracks, splatter: `pattern` placeholders);
-  `construct` = text, numbers, plates, solid colours the kit draws; `stock` = already on the car's own texture (the N/E stickers); `skip` = leave out, with `why` and a decision. For `fetch`, set `asset` to the prepared file once it exists.
+- **Name the style of generated art.** For a layer you will generate, set `"style"` to what it looks like in the photos: `plumes`, `vines`, `cracks`, `splatter`, `brush`, `stripes`, `camouflage`, `dots`, or `none` when no style fits (then ask the user for an art file or whether to leave it out). `brief show` asks for it.
+- **Then give every layer a `source`** (the next `brief show` step asks for it): `fetch` = a brand mark or logo that exists as a file (a sponsor symbol, a sponsor wordmark, a manufacturer wordmark, a club crest): never redraw it; `generate` = livery art with no file (soft plumes, vines, leaves, cracks, splatter, camouflage, stripes: `pattern` styles, see "Tonal art styles" in `ac-apply`);
+  `construct` = text, numbers, plates, solid colours the kit draws; `stock` = already on the car's own texture (small stickers already on the car); `skip` = leave out, with `why` and a decision. For `fetch`, set `asset` to the prepared file once it exists.
 - **Every layer needs `confidence` and `evidence`** (`brief show` will not move on without them):
   `high` = clearly seen and identified in a photo; `medium` = seen but small or blurred, or identified by shape or context only;
   `low` = a guess. `evidence` names the reference photo and view (and where in it) that shows the layer. If you cannot name a photo, the
   confidence is not high.
-- **Marks you recognise by shape.** Three slanted bars on a Monster Energy car are very likely the Monster claw; a lion between two bars is
-  Peugeot. Write `"brand"` and `"part"` (`wordmark`, `symbol` or `both`) and put `medium` unless a word or caption confirms it. The brief
+- **Marks you recognise by shape.** A lion between two bars is very likely Peugeot's symbol, and a prancing horse a car maker's crest. Write `"brand"` and `"part"` (`wordmark`, `symbol` or `both`) and put `medium` unless a word or caption confirms it. The brief
   then asks the user to confirm the read before anything is searched or downloaded; once confirmed, the usual "needs an image file" step finds the asset: search for the brand's own file (skill `ac-logos`), never redraw a brand mark.
   The same brand often has two parts on the car (a symbol and a wordmark): list them as two layers.
 - **Doubt is information, not failure.** A `low` layer becomes a question to the user that quotes your evidence ("I am not sure about the
